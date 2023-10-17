@@ -1,7 +1,8 @@
-import multiprocessing as mp 
+import multiprocessing as mp
 import evdev
+import keyboard
 import zmq
-import time 
+import time
 
 def sendthings(qoo):
 	context = zmq.Context()
@@ -12,21 +13,10 @@ def sendthings(qoo):
 		socket.send_string('k', zmq.SNDMORE)
 		socket.send_pyobj(data)
 
-def getBoard():
-	devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
-	keyboard = None
-	for device in devices:
-		print(device.name)
-		if keyboard is None:
-			if "keyboard" in device.name.lower():
-				keyboard = device
-				# break
-
-	if keyboard is None:
-		print("No keyboard found")
-	else:
-		print("Keyboard found: ", keyboard)
-	return keyboard
+	# devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
+	# keyboard = None
+	# for device in devices:
+	# 	print(device.name)
 
 def getKeys(keyboard, qoo):
 	try:
@@ -35,22 +25,43 @@ def getKeys(keyboard, qoo):
 				if event.type == evdev.ecodes.EV_KEY:
 					print(event.value, event.code)
 					qoo.put((event.value, event.code))
-					if event.code==1: break 
+					if event.code==1: break
 	except KeyboardInterrupt:
+		print('interrupted!')
 		pass
+
+def localtype(qin):
+	while True:
+		a, b = qin.get()
+		if b==1: return
+		
+		if a==1:
+			keyboard.press(b)
+		elif a==0:
+			keyboard.release(b)
+		elif a==2:
+			keyboard.release(b)
+			keyboard.press(b)
+
+
 
 if __name__ == '__main__':
 	qoo = mp.Queue()
 	st = mp.Process(target=sendthings,args=(qoo,))
+	# st = mp.Process(target=localtype,args=(qoo,))
 	st.start()
+
 	time.sleep(1)
 
-	# keyboard = getBoard()	
 	keyboard = evdev.InputDevice('/dev/input/event8')
-
 	if keyboard is None: exit()
-	
+
 	getKeys(keyboard, qoo)
 
 	time.sleep(1)
 	st.terminate()
+
+
+
+
+	

@@ -1,10 +1,6 @@
 import multiprocessing as mp
-import threading
 import zmq
-
-
 import keyboard
-
 
 def recvthings(qin):
 	context = zmq.Context()
@@ -17,28 +13,31 @@ def recvthings(qin):
 		data = socket.recv_pyobj()
 		qin.put(data)
 
-if __name__ == '__main__':
-	qin = mp.Queue()
-	# rt = mp.Process(target=recvthings,args=(qin,))
-	rt = threading.Thread(target=recvthings,args=(qin,))
-	rt.start()
-
+def netKeys(qin):
 	while True:
 		a, b = qin.get()
-		if b==1: break
-		try:
-			print(a,b)
-			if a==1:
-				keyboard.press(b)
-			elif a==0:
-				keyboard.release(b)
-			elif a==2:
-				keyboard.release(b)
-				keyboard.press(b)
-		except:
-			pass
+		if b==1: return
+		# try:
+		print(a,b)
+		if a==1:
+			keyboard.press(b)
+		elif a==0:
+			keyboard.release(b)
+		elif a==2:
+			keyboard.release(b)
+			keyboard.press(b)
+		
+		# except:
+		# 	print('error')
+		# 	pass
 
-	# rt.terminate()
-	
 
+if __name__ == '__main__':
+	qin = mp.Queue()
+	rt = mp.Process(target=recvthings,args=(qin,))
+	rt.start()
+
+	netKeys(qin)
+
+	rt.terminate()
 

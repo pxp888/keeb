@@ -33,22 +33,18 @@ def getKeys(keyboard, qoo):
 		with keyboard.grab_context():
 			for event in keyboard.read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
-					key_event = event.code
-					kcode = evdev.ecodes.KEY[key_event]
-					if kcode=='KEY_ESC':
-						break
-					print(event.value, kcode)
+					print(event.value, event.code)
 					qoo.put((event.value, event.code))
+					if event.code==1: break 
 	except KeyboardInterrupt:
 		pass
-
 
 if __name__ == '__main__':
 	qoo = mp.Queue()
 	st = mp.Process(target=sendthings,args=(qoo,))
 	st.start()
 	time.sleep(1)
-	
+
 	# keyboard = getBoard()	
 	keyboard = evdev.InputDevice('/dev/input/event8')
 
@@ -56,6 +52,5 @@ if __name__ == '__main__':
 	
 	getKeys(keyboard, qoo)
 
+	time.sleep(1)
 	st.terminate()
-
-

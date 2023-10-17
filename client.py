@@ -1,4 +1,5 @@
-import pynput.keyboard
+from pynput.keyboard import Key, Controller, KeyCode
+
 import multiprocessing as mp
 import zmq
 
@@ -11,23 +12,9 @@ def recvthings(qin):
     while True:
         topic = socket.recv_string()
         data = socket.recv_pyobj()
-        qin.put((topic,data))
+        qin.put(data)
         # print(topic,data)
 
-def sendthings(qoo):
-    context = zmq.Context()
-    socket = context.socket(zmq.PUB)
-    socket.bind("tcp://*:64023")
-    while True:
-        data = qoo.get()
-        socket.send_string('k', zmq.SNDMORE)
-        socket.send_pyobj(data)
-
-def on_press(key):
-    qoo.put(('d', key))
-    
-def on_release(key):
-    qoo.put(('u', key))
     
 if __name__ == '__main__':
     qin = mp.Queue()
@@ -38,6 +25,19 @@ if __name__ == '__main__':
     # st = mp.Process(target=sendthings,args=(qoo,))
     # st.start()
     
+    keyboard = Controller()
+
     while 1:
-        n = qin.get()
-        print(n)
+        a,b = qin.get()
+        if type(b)==KeyCode:
+            print('KeyCode', b)
+            k = b 
+        elif type(b)==Key:
+            print('Key', b)
+            k = b.value 
+        
+        print(k)
+        if a==1:
+            keyboard.press(k)
+        else:
+            keyboard.release(k)

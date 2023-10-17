@@ -1,12 +1,13 @@
+import pynput 
 from pynput.keyboard import Key, Controller, KeyCode
-
 import multiprocessing as mp
 import zmq
+
 
 def recvthings(qin):
     context = zmq.Context()
     socket = context.socket(zmq.SUB)
-    socket.connect("tcp://localhost:64023")
+    socket.connect("tcp://192.168.1.29:64023")
     socket.setsockopt(zmq.SUBSCRIBE, b'k')
 
     while True:
@@ -15,7 +16,15 @@ def recvthings(qin):
         qin.put(data)
         # print(topic,data)
 
-    
+def evdev_key_value_to_pynput_keycode(evdev_key_value):
+    try:
+        k = pynput.keyboard.KeyCode(evdev_key_value)
+        # k = KeyCode.from_vk(evdev_key_value)
+        print(k, type(k))
+        return k
+    except ValueError:
+        return None
+
 if __name__ == '__main__':
     qin = mp.Queue()
     qoo = mp.Queue()
@@ -29,15 +38,11 @@ if __name__ == '__main__':
 
     while 1:
         a,b = qin.get()
-        if type(b)==KeyCode:
-            print('KeyCode', b)
-            k = b 
-        elif type(b)==Key:
-            print('Key', b)
-            k = b.value 
-        
-        print(k)
-        if a==1:
-            keyboard.press(k)
-        else:
-            keyboard.release(k)
+        # k = evdev_key_value_to_pynput_keycode(b)
+        # print(k, type(k))
+        print(a,b)
+
+        # if a==1:
+        #     keyboard.press(k)
+        # else:
+        #     keyboard.release(k)

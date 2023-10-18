@@ -1,10 +1,20 @@
 import multiprocessing as mp
 import evdev
 from evdev import UInput, ecodes as e
-import keyboard as kblib
 import zmq
 import time
+import socket
+import pickle
+import platform 
+import socket
 
+def usendthings(qoo):
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	server_address = ('192.168.1.29', 64023)
+	while True:
+		target, data = qoo.get()
+		message = target.encode() + b':' + pickle.dumps(data)
+		sock.sendto(message, server_address)
 
 def sendthings(qoo):
 	context = zmq.Context()
@@ -32,13 +42,15 @@ def getKeys(keyboard, qoo):
 		with keyboard.grab_context():
 			for event in keyboard.read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
-					print(event.value, event.code)
+					# print(event.value, event.code)
 					if event.code>183:
 						if event.code<188:
-							if event.code==187: break
 							if event.code==184: target='k'
 							if event.code==185: target='local'
 							if event.code==186: target='d'
+							if event.code==187: 
+								qoo.put((target, (event.value, event.code)))
+								break
 							continue
 					if target=='local':
 						localtype(ui, event.value, event.code)
@@ -62,19 +74,23 @@ def localtype(ui, a, b):
 
 if __name__ == '__main__':
 	qoo = mp.Queue()
-	st = mp.Process(target=sendthings,args=(qoo,))
-	# st = mp.Process(target=localtype,args=(qoo,))
+	# st = mp.Process(target=sendthings,args=(qoo,))
+	st = mp.Process(target=usendthings,args=(qoo,))
 	st.start()
-
+	
 	time.sleep(1)
 
-	keyboard = evdev.InputDevice('/dev/input/event8')
-	if keyboard is None: exit()
+	if platform.processor()=='x86_64':
+		keyboard = evdev.InputDevice('/dev/input/event8')
+	else:
+		keyboard = evdev.InputDevice('/dev/input/event2')
+	if keyboard is None: 
+		print('no keyboard found')
+		exit()
 
 	getKeys(keyboard, qoo)
 
-	time.sleep(2)
+	time.sleep(1)
 	st.terminate()
 
-# thoeunththoeunhoteuh
 

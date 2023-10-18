@@ -1,6 +1,8 @@
 import multiprocessing as mp
 import zmq
 import keyboard
+import time
+
 
 def recvthings(qin):
 	context = zmq.Context()
@@ -16,7 +18,7 @@ def recvthings(qin):
 def netKeys(qin):
 	while True:
 		a, b = qin.get()
-		if b==1: return
+		if b==187: return
 		# try:
 		print(a,b)
 		if a==1:
@@ -40,4 +42,3 @@ if __name__ == '__main__':
 	netKeys(qin)
 
 	rt.terminate()
-

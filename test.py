@@ -6,7 +6,6 @@ import zmq
 import time
 
 
-
 def sendthings(qoo):
 	context = zmq.Context()
 	socket = context.socket(zmq.PUB)
@@ -74,7 +73,7 @@ if __name__ == '__main__':
 
 	getKeys(keyboard, qoo)
 
-	time.sleep(1)
+	time.sleep(2)
 	st.terminate()
 
 # thoeunththoeunhoteuh

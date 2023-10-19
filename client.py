@@ -30,9 +30,6 @@ def netKeys(qin):
 	while True:
 		mtype, b = qin.get()
 		if mtype==5: return 
-		# if b==187: return
-		# try:
-		# print(a,b)
 		if mtype==1:
 			keyboard.press(b)
 		elif mtype==0:

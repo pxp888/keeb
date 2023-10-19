@@ -3,9 +3,6 @@ import evdev
 from evdev import UInput, ecodes as e
 import zmq
 import time
-import socket
-import pickle
-import socket
 
 userInput = UInput()
 
@@ -33,32 +30,25 @@ def sendthings(qoo):
 
 
 def getKeys(keyboard, qoo):
-	target = 'x'
+	local = False
 	try:
 		with keyboard.grab_context():
 			for event in keyboard.read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
-					# print(event.value, event.code)
-					if event.code > 183:
-						if event.code < 188:
-							if event.code==184: 
-								target='x'
-								qoo.put((4,'x'))
-							if event.code==185: 
-								qoo.put((4,'y'))
-								target='y'
+					if event.value==1:
+						if event.code > 183 and event.code < 188:
+							if event.code==184: qoo.put((4,'x'))
+							if event.code==185: qoo.put((4,'y'))
 							if event.code==186: 
-								target='local'
+								local = not local
 							if event.code==187: 
 								qoo.put((5,0))
 								break
 							continue
-					if target=='local':
-						# localtype(ui, event.value, event.code)
+					if local:
 						localtype(event.value, event.code)
-						continue
-					# qoo.put((target, (1, event.value, event.code)))
-					qoo.put((event.value, event.code))
+					else:
+						qoo.put((event.value, event.code))
 	except KeyboardInterrupt:
 		print('interrupted!')
 		pass
@@ -73,7 +63,7 @@ def localtype(a, b):
 		userInput.write(e.EV_KEY, b, 0)
 		userInput.write(e.EV_KEY, b, 1)
 	userInput.syn()  # Sync the device to send the events
-	# print(a, b)
+	print('local', a, b)
 
 
 def keepalive(qoo):

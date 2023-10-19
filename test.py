@@ -25,10 +25,11 @@ def usendthings(qoo):
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	# server_address = ('192.168.1.29', 64023)
 	addresses = {}
-	addresses['a'] = ('192.168.1.29', 64023)
-	addresses['b'] = ('192.168.1.34', 64023)
-	server_address = addresses['a']
-	previousServer = addresses['a']
+	addresses['x'] = ('192.168.1.29', 64023)
+	addresses['y'] = ('192.168.1.34', 64023)
+
+	currentTarget = 'x'
+	server_address = addresses[currentTarget]
 
 	while True:
 		target, data = qoo.get()
@@ -36,16 +37,18 @@ def usendthings(qoo):
 		if target=='0':
 			sock.sendto(message, server_address)
 			continue
-		if target != previousServer:
+		if target != currentTarget:
 			if target in addresses:
-				server_address = addresses[target]
-				previousServer = addresses[target]
+				currentTarget = target
+				server_address = addresses[currentTarget]
+			else: 
+				continue
 		sock.sendto(message, server_address)
 
 
 def getKeys(keyboard, qoo):
 	ui = UInput()
-	target='a'
+	target='x'
 	try:
 		with keyboard.grab_context():
 			for event in keyboard.read_loop():
@@ -53,8 +56,8 @@ def getKeys(keyboard, qoo):
 					# print(event.value, event.code)
 					if event.code > 183:
 						if event.code < 188:
-							if event.code==184: target='a'
-							if event.code==185: target='b'
+							if event.code==184: target='x'
+							if event.code==185: target='y'
 							if event.code==186: target='local'
 							if event.code==187: 
 								qoo.put((target, (event.value, event.code)))
@@ -84,7 +87,6 @@ def keepalive(qoo):
 	while True:
 		qoo.put(('0', (0, 0)))
 		time.sleep(.01)
-
 
 if __name__ == '__main__':
 	qoo = mp.Queue()

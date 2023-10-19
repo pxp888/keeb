@@ -9,54 +9,31 @@ import socket
 
 userInput = UInput()
 
+# mtype, data
+# 0 keyup
+# 1 keydown
+# 2 keyhold
+# 3 keepalive
+# 4 change target (sender only)
+# 5 quit
 
 def sendthings(qoo):
 	context = zmq.Context()
 	socket = context.socket(zmq.PUB)
 	socket.bind("tcp://*:64023")
 
-	currentTarget = 'x'
+	target = 'x'
 	while True:
-		target, data = qoo.get()
-		if target == '0':
-			socket.send_string(currentTarget, zmq.SNDMORE)
-			socket.send_pyobj(data)
+		mtype, data = qoo.get()
+		if mtype == 4:
+			target = data
 			continue
-		if target != currentTarget:
-			currentTarget = target
-
 		socket.send_string(target, zmq.SNDMORE)
-		socket.send_pyobj(data)
-
-
-def usendthings(qoo):
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	# server_address = ('192.168.1.29', 64023)
-	addresses = {}
-	addresses['x'] = ('192.168.1.29', 64023)
-	addresses['y'] = ('192.168.1.34', 64023)
-
-	currentTarget = 'x'
-	server_address = addresses[currentTarget]
-
-	while True:
-		target, data = qoo.get()
-		message = target.encode() + b':' + pickle.dumps(data)
-		if target=='0':
-			sock.sendto(message, server_address)
-			continue
-		if target != currentTarget:
-			if target in addresses:
-				currentTarget = target
-				server_address = addresses[currentTarget]
-			else: 
-				continue
-		sock.sendto(message, server_address)
+		socket.send_pyobj((mtype, data))
 
 
 def getKeys(keyboard, qoo):
-	# ui = UInput()
-	target='x'
+	target = 'x'
 	try:
 		with keyboard.grab_context():
 			for event in keyboard.read_loop():
@@ -64,18 +41,24 @@ def getKeys(keyboard, qoo):
 					# print(event.value, event.code)
 					if event.code > 183:
 						if event.code < 188:
-							if event.code==184: target='x'
-							if event.code==185: target='y'
-							if event.code==186: target='local'
+							if event.code==184: 
+								target='x'
+								qoo.put((4,'x'))
+							if event.code==185: 
+								qoo.put((4,'y'))
+								target='y'
+							if event.code==186: 
+								target='local'
 							if event.code==187: 
-								qoo.put((target, (2, event.value, event.code)))
+								qoo.put((5,0))
 								break
 							continue
 					if target=='local':
 						# localtype(ui, event.value, event.code)
 						localtype(event.value, event.code)
 						continue
-					qoo.put((target, (1, event.value, event.code)))
+					# qoo.put((target, (1, event.value, event.code)))
+					qoo.put((event.value, event.code))
 	except KeyboardInterrupt:
 		print('interrupted!')
 		pass
@@ -95,7 +78,7 @@ def localtype(a, b):
 
 def keepalive(qoo):
 	while True:
-		qoo.put(('0', (0, 0, 0)))
+		qoo.put((3,0))
 		time.sleep(.01)
 
 if __name__ == '__main__':

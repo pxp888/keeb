@@ -5,6 +5,15 @@ import socket
 import pickle
 
 
+# mtype, data
+# 0 keyup
+# 1 keydown
+# 2 keyhold
+# 3 keepalive
+# 4 change target (sender only)
+# 5 quit
+
+
 def recvthings(qin):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
@@ -14,33 +23,21 @@ def recvthings(qin):
 	while True:
 		topic = socket.recv_string()
 		data = socket.recv_pyobj()
-		if topic=='x':
-			qin.put(data)
-
-
-def urecvthings(qin):
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	sock.bind(('0.0.0.0', 64023))
-	while True:
-		data, address = sock.recvfrom(1024)
-		target, value = data.split(b':')
-		value = pickle.loads(value)
-		if target==b'x':
-			qin.put(value)
+		qin.put(data)
 
 
 def netKeys(qin):
 	while True:
-		mtype, a, b = qin.get()
-		if mtype==2: return 
+		mtype, b = qin.get()
+		if mtype==5: return 
 		# if b==187: return
 		# try:
 		# print(a,b)
-		if a==1:
+		if mtype==1:
 			keyboard.press(b)
-		elif a==0:
+		elif mtype==0:
 			keyboard.release(b)
-		elif a==2:
+		elif mtype==2:
 			keyboard.release(b)
 			keyboard.press(b)
 		

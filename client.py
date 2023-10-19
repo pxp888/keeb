@@ -25,7 +25,7 @@ def urecvthings(qin):
 		data, address = sock.recvfrom(1024)
 		target, value = data.split(b':')
 		value = pickle.loads(value)
-		if target==b'k':
+		if target==b'a':
 			qin.put(value)
 
 

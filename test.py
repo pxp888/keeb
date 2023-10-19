@@ -9,15 +9,6 @@ import platform
 import socket
 
 
-def usendthings(qoo):
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	server_address = ('192.168.1.29', 64023)
-	while True:
-		target, data = qoo.get()
-		message = target.encode() + b':' + pickle.dumps(data)
-		sock.sendto(message, server_address)
-
-
 def sendthings(qoo):
 	context = zmq.Context()
 	socket = context.socket(zmq.PUB)
@@ -30,22 +21,45 @@ def sendthings(qoo):
 		socket.send_pyobj(data)
 
 
+def usendthings(qoo):
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	# server_address = ('192.168.1.29', 64023)
+	addresses = {}
+	addresses['a'] = ('192.168.1.29', 64023)
+	addresses['b'] = ('192.168.1.34', 64023)
+	server_address = addresses['a']
+	previousServer = addresses['a']
+
+	while True:
+		target, data = qoo.get()
+		message = target.encode() + b':' + pickle.dumps(data)
+		if target=='0':
+			sock.sendto(message, server_address)
+			continue
+		if target != previousServer:
+			if target in addresses:
+				server_address = addresses[target]
+				previousServer = addresses[target]
+		sock.sendto(message, server_address)
+
+
 def getKeys(keyboard, qoo):
 	ui = UInput()
-	target='k'
+	target='a'
 	try:
 		with keyboard.grab_context():
 			for event in keyboard.read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
-					print(event.value, event.code)
-					if event.code > 183 and event.code < 188:
-						if event.code==184: target='k'
-						if event.code==185: target='local'
-						if event.code==186: target='d'
-						if event.code==187: 
-							qoo.put((target, (event.value, event.code)))
-							break
-						continue
+					# print(event.value, event.code)
+					if event.code > 183:
+						if event.code < 188:
+							if event.code==184: target='a'
+							if event.code==185: target='b'
+							if event.code==186: target='local'
+							if event.code==187: 
+								qoo.put((target, (event.value, event.code)))
+								break
+							continue
 					if target=='local':
 						localtype(ui, event.value, event.code)
 						continue
@@ -85,6 +99,9 @@ if __name__ == '__main__':
 
 	# cat /proc/bus/input/devices | less
 	# devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
+	
+	# keyboard = evdev.InputDevice('/dev/input/event2')
+
 	if platform.processor()=='x86_64':
 		keyboard = evdev.InputDevice('/dev/input/event8')
 	else:

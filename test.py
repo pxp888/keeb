@@ -5,7 +5,6 @@ import zmq
 import time
 import socket
 import pickle
-import platform 
 import socket
 
 
@@ -13,10 +12,17 @@ def sendthings(qoo):
 	context = zmq.Context()
 	socket = context.socket(zmq.PUB)
 	socket.bind("tcp://*:64023")
+
+	currentTarget = 'x'
 	while True:
-		# data = qoo.get()
 		target, data = qoo.get()
-		# socket.send_string('k', zmq.SNDMORE)
+		if target == '0':
+			socket.send_string(currentTarget, zmq.SNDMORE)
+			socket.send_pyobj(data)
+			continue
+		if target != currentTarget:
+			currentTarget = target
+
 		socket.send_string(target, zmq.SNDMORE)
 		socket.send_pyobj(data)
 
@@ -90,8 +96,8 @@ def keepalive(qoo):
 
 if __name__ == '__main__':
 	qoo = mp.Queue()
-	# st = mp.Process(target=sendthings,args=(qoo,))
-	st = mp.Process(target=usendthings,args=(qoo,))
+	st = mp.Process(target=sendthings,args=(qoo,))
+	# st = mp.Process(target=usendthings,args=(qoo,))
 	st.start()
 
 	ka = mp.Process(target=keepalive,args=(qoo,))
@@ -102,15 +108,7 @@ if __name__ == '__main__':
 	# cat /proc/bus/input/devices | less
 	# devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
 	
-	# keyboard = evdev.InputDevice('/dev/input/event2')
-
-	if platform.processor()=='x86_64':
-		keyboard = evdev.InputDevice('/dev/input/event8')
-	else:
-		keyboard = evdev.InputDevice('/dev/input/event2')
-	if keyboard is None: 
-		print('no keyboard found')
-		exit()
+	keyboard = evdev.InputDevice('/dev/input/event2')
 
 	getKeys(keyboard, qoo)
 

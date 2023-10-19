@@ -9,12 +9,12 @@ def recvthings(qin):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
 	socket.connect("tcp://192.168.1.33:64023")
-	socket.setsockopt(zmq.SUBSCRIBE, b'k')
+	socket.setsockopt(zmq.SUBSCRIBE, b'x')
 
 	while True:
 		topic = socket.recv_string()
 		data = socket.recv_pyobj()
-		if topic=='k':
+		if topic=='x':
 			qin.put(data)
 
 
@@ -49,8 +49,8 @@ def netKeys(qin):
 
 if __name__ == '__main__':
 	qin = mp.Queue()
-	# rt = mp.Process(target=recvthings,args=(qin,))
-	rt = mp.Process(target=urecvthings,args=(qin,))
+	rt = mp.Process(target=recvthings,args=(qin,))
+	# rt = mp.Process(target=urecvthings,args=(qin,))
 	rt.start()
 
 	netKeys(qin)

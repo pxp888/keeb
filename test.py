@@ -7,6 +7,8 @@ import socket
 import pickle
 import socket
 
+userInput = UInput()
+
 
 def sendthings(qoo):
 	context = zmq.Context()
@@ -53,7 +55,7 @@ def usendthings(qoo):
 
 
 def getKeys(keyboard, qoo):
-	ui = UInput()
+	# ui = UInput()
 	target='x'
 	try:
 		with keyboard.grab_context():
@@ -66,32 +68,34 @@ def getKeys(keyboard, qoo):
 							if event.code==185: target='y'
 							if event.code==186: target='local'
 							if event.code==187: 
-								qoo.put((target, (event.value, event.code)))
+								qoo.put((target, (2, event.value, event.code)))
 								break
 							continue
 					if target=='local':
-						localtype(ui, event.value, event.code)
+						# localtype(ui, event.value, event.code)
+						localtype(event.value, event.code)
 						continue
-					qoo.put((target, (event.value, event.code)))
+					qoo.put((target, (1, event.value, event.code)))
 	except KeyboardInterrupt:
 		print('interrupted!')
 		pass
 
 
-def localtype(ui, a, b):
+def localtype(a, b):
 	if a == 1:
-		ui.write(e.EV_KEY, b, 1)
+		userInput.write(e.EV_KEY, b, 1)
 	elif a == 0:
-		ui.write(e.EV_KEY, b, 0)
+		userInput.write(e.EV_KEY, b, 0)
 	elif a == 2:
-		ui.write(e.EV_KEY, b, 0)
-		ui.write(e.EV_KEY, b, 1)
-	ui.syn()  # Sync the device to send the events
+		userInput.write(e.EV_KEY, b, 0)
+		userInput.write(e.EV_KEY, b, 1)
+	userInput.syn()  # Sync the device to send the events
+	# print(a, b)
 
 
 def keepalive(qoo):
 	while True:
-		qoo.put(('0', (0, 0)))
+		qoo.put(('0', (0, 0, 0)))
 		time.sleep(.01)
 
 if __name__ == '__main__':
@@ -115,5 +119,4 @@ if __name__ == '__main__':
 	time.sleep(1)
 	st.terminate()
 	ka.terminate()
-
 

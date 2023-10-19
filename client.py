@@ -31,8 +31,9 @@ def urecvthings(qin):
 
 def netKeys(qin):
 	while True:
-		a, b = qin.get()
-		if b==187: return
+		mtype, a, b = qin.get()
+		if mtype==2: return 
+		# if b==187: return
 		# try:
 		# print(a,b)
 		if a==1:

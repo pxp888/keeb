@@ -1,7 +1,6 @@
 import multiprocessing as mp
 import zmq
 import keyboard
-import time
 import socket
 import pickle
 
@@ -26,8 +25,8 @@ def urecvthings(qin):
 		data, address = sock.recvfrom(1024)
 		target, value = data.split(b':')
 		value = pickle.loads(value)
-		qin.put(value)
-		# print(f"Received {value} for target {target.decode()} from {address}")
+		if target==b'k':
+			qin.put(value)
 
 
 def netKeys(qin):
@@ -47,7 +46,6 @@ def netKeys(qin):
 		# except:
 		# 	print('error')
 		# 	pass
-
 
 if __name__ == '__main__':
 	qin = mp.Queue()

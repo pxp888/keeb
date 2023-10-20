@@ -9,6 +9,7 @@ import time
 userInput = UInput()
 history = ''
 
+
 # mtype, data
 # 0 keyup
 # 1 keydown
@@ -16,6 +17,11 @@ history = ''
 # 3 keepAlive
 # 4 change target
 # 5 quit
+# 6 toggle scroll
+# 7 mouse x
+# 8 mouse y 
+# 9 mouse click
+# 10 mouse scroll
 
 
 def sendthings(qoo):
@@ -53,10 +59,14 @@ def getKeys(qoo):
 					if event.value==0:
 						if event.code > 183:
 							if event.code < 188:
-								local = False
-								if event.code==184: qoo.put((4,'x'))
-								if event.code==185: qoo.put((4,'y'))
-								if event.code==186: local = True
+								if event.code==184:
+									local = False
+									qoo.put((4,'x'))
+								if event.code==185:
+									local = False
+									qoo.put((4,'y'))
+								if event.code==186:
+									local = True
 								if event.code==187:
 									qoo.put((5,0))
 									break
@@ -79,13 +89,13 @@ def localType(a, b):
 		userInput.write(e.EV_KEY, b, 0)
 		userInput.write(e.EV_KEY, b, 1)
 	userInput.syn()
-	# print('local', a, b)
 
 
 def keepAlive(qoo):
 	while True:
 		qoo.put((3,0))
 		time.sleep(.01)
+
 
 def getMouse(qoo):
 	mouse = evdev.InputDevice('/dev/input/event11')
@@ -94,9 +104,11 @@ def getMouse(qoo):
 			for event in mouse.read_loop():
 				if event.type == evdev.ecodes.EV_REL:
 					if event.code == e.REL_X:
-						print(f"Mouse moved {event.value} units in the X direction")
+						# print(f"Mouse moved {event.value} units in the X direction")
+						qoo.put((7,event.value))
 					elif event.code == e.REL_Y:
-						print(f"Mouse moved {event.value} units in the Y direction")
+						# print(f"Mouse moved {event.value} units in the Y direction")
+						qoo.put((8,event.value))
 	except KeyboardInterrupt:
 		print('mouse interrupted!')
 		pass
@@ -111,13 +123,18 @@ if __name__ == '__main__':
 	ka = mp.Process(target=keepAlive,args=(qoo,))
 	ka.start()
 
+	mt = mp.Process(target=getMouse,args=(qoo,))
+	mt.start()
+
 	time.sleep(1)
 
 	# cat /proc/bus/input/devices | less
-	# devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
-
+	
 	getKeys(qoo)
 	
 	time.sleep(1)
+
 	st.terminate()
 	ka.terminate()
+	mt.terminate()
+

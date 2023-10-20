@@ -1,6 +1,7 @@
 import multiprocessing as mp
 import zmq
-import keyboard
+import evdev
+from evdev import UInput, AbsInfo, ecodes as e
 
 
 # mtype, data
@@ -10,9 +11,14 @@ import keyboard
 # 3 keepalive
 # 4 change target (sender only)
 # 5 quit
+# 6 toggle scroll
+# 7 mouse x
+# 8 mouse y 
+# 9 mouse click
+# 10 mouse scroll
 
 
-def recvthings(qin):
+def recvthings(qin, qoo):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
 	socket.connect("tcp://192.168.1.29:64023")
@@ -24,22 +30,29 @@ def recvthings(qin):
 
 
 def pushKeys(qin):
+	userInput = UInput()
+	print(userInput)
 	while True:
 		mtype, b = qin.get()
 		if mtype==5: return 
 		if mtype==1:
-			keyboard.press(b)
+			userInput.write(e.EV_KEY, b, 1)
 		elif mtype==0:
-			keyboard.release(b)
+			userInput.write(e.EV_KEY, b, 0)
 		elif mtype==2:
-			keyboard.release(b)
-			keyboard.press(b)
+			userInput.write(e.EV_KEY, b, 0)
+			userInput.write(e.EV_KEY, b, 1)
+		userInput.syn()
 
 
 if __name__ == '__main__':
 	qin = mp.Queue()
-	rt = mp.Process(target=recvthings,args=(qin,))
+	qoo = mp.Queue()
+
+	rt = mp.Process(target=recvthings,args=(qin, qoo))
 	rt.start()
+
 	pushKeys(qin)
 
 	rt.terminate()
+

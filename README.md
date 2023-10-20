@@ -24,12 +24,10 @@ qoo(qoo)
 st("sendthings()")
 lt("localtype()")
 
-gm("getmouse")
 
 gk & ka --> qoo --> st
 gk --> lt
 st --> x & y
-gm --> qoo
 
 ```
 

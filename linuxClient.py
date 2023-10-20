@@ -1,7 +1,6 @@
 import multiprocessing as mp
 import zmq
-import evdev
-from evdev import UInput, AbsInfo, ecodes as e
+from evdev import UInput, ecodes as e
 
 
 # mtype, data
@@ -11,17 +10,12 @@ from evdev import UInput, AbsInfo, ecodes as e
 # 3 keepalive
 # 4 change target (sender only)
 # 5 quit
-# 6 toggle scroll
-# 7 mouse x
-# 8 mouse y 
-# 9 mouse click
-# 10 mouse scroll
 
 
 def recvthings(qin, qoo):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
-	socket.connect("tcp://192.168.1.29:64023")
+	socket.connect("tcp://192.168.1.33:64023")
 	socket.setsockopt(zmq.SUBSCRIBE, b'x')
 	while True:
 		topic = socket.recv_string()

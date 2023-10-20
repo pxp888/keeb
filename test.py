@@ -6,14 +6,16 @@ import time
 
 
 userInput = UInput()
+history = ''
 
 # mtype, data
 # 0 keyup
 # 1 keydown
 # 2 keyhold
 # 3 keepAlive
-# 4 change target (sender only)
+# 4 change target
 # 5 quit
+
 
 def sendthings(qoo):
 	context = zmq.Context()
@@ -30,29 +32,35 @@ def sendthings(qoo):
 		socket.send_pyobj((mtype, data))
 
 
+def record(a,b):
+	global history
+	if a < 2:
+		n = str(a)+str(b)+'-'
+		history += n
+		history = history[-20:]
+		print(history)
+
+
 def getKeys(keyboard, qoo):
 	local = False
 	try:
 		with keyboard.grab_context():
 			for event in keyboard.read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
+					# record(event.value, event.code)
 					if event.value==0:
 						if event.code > 183:
 							if event.code < 188:
-								if event.code==184:
-									qoo.put((4,'x'))
-									local = False
-								if event.code==185:
-									qoo.put((4,'y'))
-									local = False
-								if event.code==186:
-									local = True
+								local = False
+								if event.code==184: qoo.put((4,'x'))
+								if event.code==185: qoo.put((4,'y'))
+								if event.code==186: local = True
 								if event.code==187:
 									qoo.put((5,0))
 									break
 								continue
 					if local:
-						localtype(event.value, event.code)
+						localType(event.value, event.code)
 					else:
 						qoo.put((event.value, event.code))
 	except KeyboardInterrupt:
@@ -60,7 +68,7 @@ def getKeys(keyboard, qoo):
 		pass
 
 
-def localtype(a, b):
+def localType(a, b):
 	if a == 1:
 		userInput.write(e.EV_KEY, b, 1)
 	elif a == 0:
@@ -85,12 +93,12 @@ if __name__ == '__main__':
 
 	ka = mp.Process(target=keepAlive,args=(qoo,))
 	ka.start()
-	
+
 	time.sleep(1)
 
 	# cat /proc/bus/input/devices | less
 	# devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
-	
+
 	keyboard = evdev.InputDevice('/dev/input/event8')
 
 

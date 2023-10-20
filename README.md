@@ -10,12 +10,21 @@ qoo(qoo)
 st("sendthings()")
 
 lt("localtype()")
-cmd("command()")
 
 gk & ka --> qoo --> st
-gk --> cmd
 gk --> lt
 
 st --> x & y
+
+subgraph "main thread"
+    gk
+    ka
+    lt
+    qoo
+end
+
+subgraph "send thread"
+    st
+end
 
 ```

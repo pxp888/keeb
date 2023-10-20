@@ -4,13 +4,14 @@ from evdev import UInput, ecodes as e
 import zmq
 import time
 
+
 userInput = UInput()
 
 # mtype, data
 # 0 keyup
 # 1 keydown
 # 2 keyhold
-# 3 keepalive
+# 3 keepAlive
 # 4 change target (sender only)
 # 5 quit
 
@@ -35,16 +36,21 @@ def getKeys(keyboard, qoo):
 		with keyboard.grab_context():
 			for event in keyboard.read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
-					if event.value==1:
-						if event.code > 183 and event.code < 188:
-							if event.code==184: qoo.put((4,'x'))
-							if event.code==185: qoo.put((4,'y'))
-							if event.code==186: 
-								local = not local
-							if event.code==187: 
-								qoo.put((5,0))
-								break
-							continue
+					if event.value==0:
+						if event.code > 183:
+							if event.code < 188:
+								if event.code==184:
+									qoo.put((4,'x'))
+									local = False
+								if event.code==185:
+									qoo.put((4,'y'))
+									local = False
+								if event.code==186:
+									local = True
+								if event.code==187:
+									qoo.put((5,0))
+									break
+								continue
 					if local:
 						localtype(event.value, event.code)
 					else:
@@ -62,22 +68,22 @@ def localtype(a, b):
 	elif a == 2:
 		userInput.write(e.EV_KEY, b, 0)
 		userInput.write(e.EV_KEY, b, 1)
-	userInput.syn()  # Sync the device to send the events
-	print('local', a, b)
+	userInput.syn()
+	# print('local', a, b)
 
 
-def keepalive(qoo):
+def keepAlive(qoo):
 	while True:
 		qoo.put((3,0))
 		time.sleep(.01)
 
+
 if __name__ == '__main__':
 	qoo = mp.Queue()
 	st = mp.Process(target=sendthings,args=(qoo,))
-	# st = mp.Process(target=usendthings,args=(qoo,))
 	st.start()
 
-	ka = mp.Process(target=keepalive,args=(qoo,))
+	ka = mp.Process(target=keepAlive,args=(qoo,))
 	ka.start()
 	
 	time.sleep(1)
@@ -85,7 +91,8 @@ if __name__ == '__main__':
 	# cat /proc/bus/input/devices | less
 	# devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
 	
-	keyboard = evdev.InputDevice('/dev/input/event2')
+	keyboard = evdev.InputDevice('/dev/input/event8')
+
 
 	getKeys(keyboard, qoo)
 

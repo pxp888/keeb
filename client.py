@@ -1,8 +1,10 @@
 import multiprocessing as mp
 import zmq
-import pyautogui
+import win32api
+import win32con
 
-from keymap import key_map
+
+from keymap import win32map, extended_keys
 
 # mtype, data
 # 0 keyup
@@ -21,26 +23,35 @@ def recvthings(qin):
 	while True:
 		topic = socket.recv_string()
 		data = socket.recv_pyobj()
-		qin.put(data)
+		if data[0]!=3:
+			qin.put(data)
 
 
 def pushKeys(qin):
 	while True:
 		mtype, b = qin.get()
-		if mtype==5: return 
-		if b in key_map:
-			b = key_map[b]
-		else:
-			print('unmapped')
-			continue 
-		if mtype==1:
-			pyautogui.keyDown(b)
-		elif mtype==0:
-			pyautogui.keyUp(b)
-		elif mtype==2:
-			pyautogui.keyUp(b)
-			pyautogui.keyDown(b)
+		if mtype==5: return
 
+		if b in extended_keys:
+			down = 0|win32con.KEYEVENTF_EXTENDEDKEY
+			up = win32con.KEYEVENTF_EXTENDEDKEY | win32con.KEYEVENTF_KEYUP
+			c = extended_keys[b]
+		else:
+			down = 0 
+			up = win32con.KEYEVENTF_KEYUP
+			try:
+				c = win32map[b]
+			except KeyError:
+				print('Key not found:', b)
+				continue
+
+		if mtype==1:
+			win32api.keybd_event(c, 0, down, 0)
+		elif mtype==0:
+			win32api.keybd_event(c, 0, up, 0)
+		elif mtype==2:
+			win32api.keybd_event(c, 0, up, 0)
+			win32api.keybd_event(c, 0, down, 0)
 
 if __name__ == '__main__':
 	qin = mp.Queue()

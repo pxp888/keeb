@@ -1,6 +1,6 @@
 import multiprocessing as mp
 import evdev
-from evdev import UInput, ecodes as e
+from evdev import UInput, AbsInfo, ecodes as e
 import zmq
 import time
 
@@ -43,7 +43,7 @@ def record(a,b):
 
 
 def getKeys(qoo):
-	keyboard = evdev.InputDevice('/dev/input/event2')
+	keyboard = evdev.InputDevice('/dev/input/event8')
 	local = False
 	try:
 		with keyboard.grab_context():
@@ -91,23 +91,6 @@ def keepAlive(qoo):
 		time.sleep(.01)
 
 
-def getMouse(qoo):
-	mouse = evdev.InputDevice('/dev/input/event11')
-	try:
-		with mouse.grab_context():
-			for event in mouse.read_loop():
-				if event.type == evdev.ecodes.EV_REL:
-					if event.code == e.REL_X:
-						# print(f"Mouse moved {event.value} units in the X direction")
-						qoo.put((7,event.value))
-					elif event.code == e.REL_Y:
-						# print(f"Mouse moved {event.value} units in the Y direction")
-						qoo.put((8,event.value))
-	except KeyboardInterrupt:
-		print('mouse interrupted!')
-		pass
-
-
 if __name__ == '__main__':
 	qoo = mp.Queue()
 
@@ -119,13 +102,12 @@ if __name__ == '__main__':
 
 	time.sleep(1)
 
-	# cat /proc/bus/input/devices | less
-	
+	# cat /proc/bus/input/devices | less	
+
 	getKeys(qoo)
 	
 	time.sleep(1)
 
 	st.terminate()
 	ka.terminate()
-
 

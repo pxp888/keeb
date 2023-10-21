@@ -15,7 +15,7 @@ from evdev import UInput, ecodes as e
 def recvthings(qin, qoo):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
-	socket.connect("tcp://192.168.1.33:64023")
+	socket.connect("tcp://10.0.0.10:64023")
 	socket.setsockopt(zmq.SUBSCRIBE, b'x')
 	while True:
 		topic = socket.recv_string()
@@ -25,7 +25,6 @@ def recvthings(qin, qoo):
 
 def pushKeys(qin):
 	userInput = UInput()
-	print(userInput)
 	while True:
 		mtype, b = qin.get()
 		if mtype==5: return 
@@ -37,6 +36,13 @@ def pushKeys(qin):
 			userInput.write(e.EV_KEY, b, 0)
 			userInput.write(e.EV_KEY, b, 1)
 		userInput.syn()
+
+
+def moveMouse(qoo):
+	userInput = UInput({
+		e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE],
+		e.EV_REL: [e.REL_X, e.REL_Y],
+		})
 
 
 if __name__ == '__main__':

@@ -43,28 +43,27 @@ def record(a,b):
 
 
 def getKeys(qoo):
-	keyboard = evdev.InputDevice('/dev/input/event8')
+	keyboard = evdev.InputDevice('/dev/input/event2')
 	local = False
 	try:
 		with keyboard.grab_context():
 			for event in keyboard.read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
 					# record(event.value, event.code)
-					if event.value==0:
-						if event.code > 183:
-							if event.code < 188:
-								if event.code==184:
-									local = False
-									qoo.put((4,'x'))
-								if event.code==185:
-									local = False
-									qoo.put((4,'y'))
-								if event.code==186:
-									local = True
-								if event.code==187:
-									qoo.put((5,0))
-									break
-								continue
+					if event.code > 183 and event.code < 188:
+						if event.value==0:
+							if event.code==184:
+								local = False
+								qoo.put((4,'x'))
+							if event.code==185:
+								local = False
+								qoo.put((4,'y'))
+							if event.code==186:
+								local = True
+							if event.code==187:
+								qoo.put((5,0))
+								break
+						continue
 					if local:
 						localType(event.value, event.code)
 					else:

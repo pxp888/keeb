@@ -1,7 +1,8 @@
 import multiprocessing as mp
 import zmq
-import keyboard
+import pyautogui
 
+from keymap import key_map
 
 # mtype, data
 # 0 keyup
@@ -15,7 +16,7 @@ import keyboard
 def recvthings(qin):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
-	socket.connect("tcp://192.168.1.29:64023")
+	socket.connect("tcp://192.168.1.36:64023")
 	socket.setsockopt(zmq.SUBSCRIBE, b'x')
 	while True:
 		topic = socket.recv_string()
@@ -27,13 +28,18 @@ def pushKeys(qin):
 	while True:
 		mtype, b = qin.get()
 		if mtype==5: return 
+		if b in key_map:
+			b = key_map[b]
+		else:
+			print('unmapped')
+			continue 
 		if mtype==1:
-			keyboard.press(b)
+			pyautogui.keyDown(b)
 		elif mtype==0:
-			keyboard.release(b)
+			pyautogui.keyUp(b)
 		elif mtype==2:
-			keyboard.release(b)
-			keyboard.press(b)
+			pyautogui.keyUp(b)
+			pyautogui.keyDown(b)
 
 
 if __name__ == '__main__':
@@ -43,3 +49,4 @@ if __name__ == '__main__':
 	pushKeys(qin)
 
 	rt.terminate()
+	

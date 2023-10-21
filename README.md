@@ -10,7 +10,6 @@ keyboard sharing client and server
 |3|keepalive
 |4| change target (sender only)
 |5| quit
-|6| toggle scroll
 
 
 ### __serve.py__
@@ -29,15 +28,39 @@ gk & ka --> qoo --> st
 gk --> lt
 st --> x & y
 
+
+subgraph "keepalive process"
+    ka
+end
+
+subgraph "send process"
+    st
+end
+
+
 ```
 
-### __client.py__
+
+### __linuxClient.py__
 
 ```mermaid
 graph LR
 rcv("recvthings()")
 pk("pushkeys()")
+mm("moveMous()")
+qin(qin)
 
-rcv --> pk
+rcv --> qin --> pk
+rcv --> qoo --> mm
+
+
+subgraph "receive process"
+    rcv
+end
+
+subgraph "mouse process"
+    mm
+end
+
 ```
 

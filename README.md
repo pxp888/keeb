@@ -28,6 +28,10 @@ gk & ka --> qoo --> st
 gk --> lt
 st --> x & y
 
+subgraph "main process"
+    gk
+    lt
+end
 
 subgraph "keepalive process"
     ka
@@ -36,6 +40,11 @@ end
 subgraph "send process"
     st
 end
+
+subgraph "media keys"
+    gk2("getkeys()")
+end
+gk2 --> qoo
 
 
 ```

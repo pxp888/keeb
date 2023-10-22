@@ -104,12 +104,15 @@ def localType(a, b):
 
 def keepAlive(qoo):
 	while True:
-		qoo.put((3,0))
+		try:
+			qoo.put((3,0),1)
+		except:
+			pass
 		time.sleep(.01)
 
 
 if __name__ == '__main__':
-	qoo = mp.Queue()
+	qoo = mp.Queue(maxsize=200)
 	
 	st = mp.Process(target=sendthings,args=(qoo,))
 	st.start()

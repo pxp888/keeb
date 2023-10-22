@@ -3,7 +3,6 @@ import evdev
 from evdev import UInput, AbsInfo, ecodes as e
 import zmq
 import time
-import subprocess
 
 userInput = UInput()
 history = ''
@@ -56,9 +55,9 @@ def record(a,b):
 		print(history)
 
 
-def getKeys(qoo):
+def getKeys(qoo, deviceNames):
 	# keyboard = evdev.InputDevice('/dev/input/event0')
-	keyboard = getKeyboard(['Keebio Keebio Iris Rev. 4','OLKB Planck Light'])
+	keyboard = getKeyboard(deviceNames)
 	if keyboard is None:
 		print('no keyboard found!')
 		return
@@ -120,12 +119,17 @@ if __name__ == '__main__':
 
 	time.sleep(1)
 
-	# cat /proc/bus/input/devices | less	
+	deviceNames = ['Keebio Keebio Iris Rev. 4','OLKB Planck Light']
+	mediaNames = ['Keebio Keebio Iris Rev. 4 Consumer Control','OLKB Planck Light Consumer Control']
+	
+	gm = mp.Process(target=getKeys,args=(qoo,mediaNames))
+	gm.start()
 
-	getKeys(qoo)
+	getKeys(qoo, deviceNames)
 	
 	time.sleep(1)
 
 	st.terminate()
 	ka.terminate()
+	gm.terminate()
 

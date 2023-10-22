@@ -97,8 +97,7 @@ def localType(a, b):
 	elif a == 0:
 		userInput.write(e.EV_KEY, b, 0)
 	elif a == 2:
-		userInput.write(e.EV_KEY, b, 0)
-		userInput.write(e.EV_KEY, b, 1)
+		userInput.write(e.EV_KEY, b, 2)
 	userInput.syn()
 
 

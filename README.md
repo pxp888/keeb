@@ -1,6 +1,14 @@
 # keeb
 keyboard sharing client and server
 
+These scripts redirect keystrokes from one computer to another. The server is the computer that has the keyboard, and the client is the computer that receives the keystrokes. 
+
+## Potential features
+
+- on the fly macros
+- 
+
+## Message format
 
 |mtype|data|
 |---|---|
@@ -12,7 +20,7 @@ keyboard sharing client and server
 |5| quit
 
 
-### __serve.py__
+## __serve.py__
 
 ```mermaid
 graph LR
@@ -28,16 +36,16 @@ gk & ka --> qoo --> st
 gk --> lt
 st --> x & y
 
-subgraph "main process"
+subgraph "main thread"
     gk
     lt
 end
 
-subgraph "keepalive process"
+subgraph "keepalive"
     ka
 end
 
-subgraph "send process"
+subgraph "send"
     st
 end
 
@@ -50,26 +58,21 @@ gk2 --> qoo
 ```
 
 
-### __linuxClient.py__
+## __linuxClient.py__
 
 ```mermaid
 graph LR
 rcv("recvthings()")
 pk("pushkeys()")
-mm("moveMous()")
+
 qin(qin)
 
 rcv --> qin --> pk
-rcv --> qoo --> mm
-
 
 subgraph "receive process"
     rcv
 end
 
-subgraph "mouse process"
-    mm
-end
 
 ```
 

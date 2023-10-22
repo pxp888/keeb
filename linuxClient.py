@@ -33,8 +33,7 @@ def pushKeys(qin):
 		elif mtype==0:
 			userInput.write(e.EV_KEY, b, 0)
 		elif mtype==2:
-			userInput.write(e.EV_KEY, b, 0)
-			userInput.write(e.EV_KEY, b, 1)
+			userInput.write(e.EV_KEY, b, 2)
 		userInput.syn()
 
 

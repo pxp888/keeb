@@ -18,6 +18,9 @@ history = ''
 # 5 quit
 
 def getKeyboard(names):
+	# if names is not a list, make it a list
+	if not isinstance(names, list):
+		names = [names]
 	devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
 	for device in devices:
 		if device.name in names:

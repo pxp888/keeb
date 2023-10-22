@@ -3,10 +3,9 @@ import evdev
 from evdev import UInput, AbsInfo, ecodes as e
 import zmq
 import time
+import select
 
 userInput = UInput()
-history = ''
-
 
 # mtype, data
 # 0 keyup
@@ -16,8 +15,8 @@ history = ''
 # 4 change target
 # 5 quit
 
+
 def getKeyboard(names):
-	# if names is not a list, make it a list
 	if not isinstance(names, list):
 		names = [names]
 	devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
@@ -28,7 +27,7 @@ def getKeyboard(names):
 			print(device.info)
 			print('------------------')
 			return device
-	return None 
+	return None
 
 
 def sendthings(qoo):
@@ -46,49 +45,36 @@ def sendthings(qoo):
 		socket.send_pyobj((mtype, data))
 
 
-def record(a,b):
-	global history
-	if a < 2:
-		n = str(a)+str(b)+'-'
-		history += n
-		history = history[-20:]
-		print(history)
-
-
 def getKeys(qoo, deviceNames):
-	# keyboard = evdev.InputDevice('/dev/input/event0')
 	keyboard = getKeyboard(deviceNames)
 	if keyboard is None:
 		print('no keyboard found!')
 		return
-	
+
 	local = False
-	try:
-		with keyboard.grab_context():
-			for event in keyboard.read_loop():
-				if event.type == evdev.ecodes.EV_KEY:
-					# record(event.value, event.code)
-					if event.code > 183 and event.code < 188:
-						if event.value==0:
-							if event.code==184:
-								local = False
-								qoo.put((4,'x'))
-							if event.code==185:
-								local = False
-								qoo.put((4,'y'))
-							if event.code==186:
-								local = True
-							if event.code==187:
-								qoo.put((5,0))
-								break
-						continue
-					if local:
-						localType(event.value, event.code)
-					else:
-						qoo.put((event.value, event.code))
-	except KeyboardInterrupt:
-		print('interrupted!')
-		pass
+	with keyboard.grab_context():
+		while True:
+			r, w, x = select.select([keyboard], [], [])
+			event = keyboard.read_one()
+			if event.type == evdev.ecodes.EV_KEY:
+				if event.code > 183 and event.code < 188:
+					if event.value == 0:
+						if event.code == 184:
+							local = False
+							qoo.put((4, 'x'))
+						if event.code == 185:
+							local = False
+							qoo.put((4, 'y'))
+						if event.code == 186:
+							local = True
+						if event.code == 187:
+							qoo.put((5, 0))
+							break
+					continue
+				if local:
+					localType(event.value, event.code)
+				else:
+					qoo.put((event.value, event.code))
 
 
 def localType(a, b):
@@ -103,35 +89,28 @@ def localType(a, b):
 
 def keepAlive(qoo):
 	while True:
-		try:
-			qoo.put((3,0),1)
-		except:
-			pass
+		qoo.put((3, 0))
 		time.sleep(.01)
 
 
 if __name__ == '__main__':
 	qoo = mp.Queue(maxsize=200)
-	
-	st = mp.Process(target=sendthings,args=(qoo,))
-	st.start()
 
-	ka = mp.Process(target=keepAlive,args=(qoo,))
+	st = mp.Process(target=sendthings, args=(qoo,))
+	ka = mp.Process(target=keepAlive, args=(qoo,))
+	st.start()
 	ka.start()
 
 	time.sleep(1)
 
-	deviceNames = ['Keebio Keebio Iris Rev. 4','OLKB Planck Light']
-	mediaNames = ['Keebio Keebio Iris Rev. 4 Consumer Control','OLKB Planck Light Consumer Control']
-	
-	gm = mp.Process(target=getKeys,args=(qoo,mediaNames))
+	deviceNames = ['Keebio Keebio Iris Rev. 4', 'OLKB Planck Light']
+	mediaNames = ['Keebio Keebio Iris Rev. 4 Consumer Control', 'OLKB Planck Light Consumer Control']
+	gm = mp.Process(target=getKeys, args=(qoo, mediaNames))
 	gm.start()
 
 	getKeys(qoo, deviceNames)
-	
 	time.sleep(1)
 
 	st.terminate()
 	ka.terminate()
 	gm.terminate()
-

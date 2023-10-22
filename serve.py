@@ -3,7 +3,7 @@ import evdev
 from evdev import UInput, AbsInfo, ecodes as e
 import zmq
 import time
-
+import subprocess
 
 userInput = UInput()
 history = ''
@@ -16,6 +16,17 @@ history = ''
 # 3 keepAlive
 # 4 change target
 # 5 quit
+
+def getKeyboard(names):
+	devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
+	for device in devices:
+		if device.name in names:
+			print(device.name)
+			print(device.phys)
+			print(device.info)
+			print('------------------')
+			return device
+	return None 
 
 
 def sendthings(qoo):
@@ -43,7 +54,12 @@ def record(a,b):
 
 
 def getKeys(qoo):
-	keyboard = evdev.InputDevice('/dev/input/event2')
+	# keyboard = evdev.InputDevice('/dev/input/event0')
+	keyboard = getKeyboard(['Keebio Keebio Iris Rev. 4','OLKB Planck Light'])
+	if keyboard is None:
+		print('no keyboard found!')
+		return
+	
 	local = False
 	try:
 		with keyboard.grab_context():
@@ -92,7 +108,7 @@ def keepAlive(qoo):
 
 if __name__ == '__main__':
 	qoo = mp.Queue()
-
+	
 	st = mp.Process(target=sendthings,args=(qoo,))
 	st.start()
 

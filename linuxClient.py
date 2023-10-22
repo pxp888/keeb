@@ -15,7 +15,7 @@ from evdev import UInput, ecodes as e
 def recvthings(qin, qoo):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
-	socket.connect("tcp://192.168.1.36:64023")
+	socket.connect("tcp://10.0.0.11:64023")
 	socket.setsockopt(zmq.SUBSCRIBE, b'x')
 	while True:
 		topic = socket.recv_string()

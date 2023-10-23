@@ -4,6 +4,10 @@ from evdev import UInput, AbsInfo, ecodes as e
 import zmq
 import time
 import select
+import configparser
+
+config = configparser.ConfigParser()
+config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini'])
 
 userInput = UInput()
 
@@ -94,7 +98,7 @@ def keepAlive(qoo):
 
 
 if __name__ == '__main__':
-	qoo = mp.Queue(maxsize=200)
+	qoo = mp.Queue(maxsize=100)
 
 	st = mp.Process(target=sendthings, args=(qoo,))
 	ka = mp.Process(target=keepAlive, args=(qoo,))
@@ -103,8 +107,11 @@ if __name__ == '__main__':
 
 	time.sleep(1)
 
-	deviceNames = ['Keebio Keebio Iris Rev. 4', 'OLKB Planck Light']
-	mediaNames = ['Keebio Keebio Iris Rev. 4 Consumer Control', 'OLKB Planck Light Consumer Control']
+	deviceNames = config['DEFAULT']['DeviceNames'].split('|')
+	mediaNames = config['DEFAULT']['MediaNames'].split('|')
+	# deviceNames = ['Keebio Keebio Iris Rev. 4', 'OLKB Planck Light']
+	# mediaNames = ['Keebio Keebio Iris Rev. 4 Consumer Control', 'OLKB Planck Light Consumer Control']
+
 	gm = mp.Process(target=getKeys, args=(qoo, mediaNames))
 	gm.start()
 

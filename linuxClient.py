@@ -1,6 +1,10 @@
 import multiprocessing as mp
 import zmq
 from evdev import UInput, ecodes as e
+import configparser
+
+config = configparser.ConfigParser()
+config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini'])
 
 
 # mtype, data
@@ -15,7 +19,7 @@ from evdev import UInput, ecodes as e
 def recvthings(qin, qoo):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
-	socket.connect("tcp://10.0.0.11:64023")
+	socket.connect(config['DEFAULT']['ServerIP'])
 	socket.setsockopt(zmq.SUBSCRIBE, b'x')
 	while True:
 		topic = socket.recv_string()

@@ -107,10 +107,8 @@ if __name__ == '__main__':
 
 	time.sleep(1)
 
-	deviceNames = config['DEFAULT']['DeviceNames'].split('|')
-	mediaNames = config['DEFAULT']['MediaNames'].split('|')
-	# deviceNames = ['Keebio Keebio Iris Rev. 4', 'OLKB Planck Light']
-	# mediaNames = ['Keebio Keebio Iris Rev. 4 Consumer Control', 'OLKB Planck Light Consumer Control']
+	deviceNames = config['server']['DeviceNames'].split('|')
+	mediaNames = config['server']['MediaNames'].split('|')
 
 	gm = mp.Process(target=getKeys, args=(qoo, mediaNames))
 	gm.start()

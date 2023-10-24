@@ -6,7 +6,6 @@ import configparser
 config = configparser.ConfigParser()
 config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini'])
 
-
 # mtype, data
 # 0 keyup
 # 1 keydown

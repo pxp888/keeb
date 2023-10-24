@@ -1,3 +1,4 @@
+from evdev import UInput, ecodes as e
 import asyncio
 import zmq.asyncio
 import configparser
@@ -8,7 +9,8 @@ config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.i
 async def recvthings(qin):
     context = zmq.asyncio.Context()
     socket = context.socket(zmq.SUB)
-    socket.connect(config['DEFAULT']['ServerIP'])
+    # socket.connect(config['DEFAULT']['ServerIP'])
+    socket.connect("tcp://localhost:64024")
     socket.setsockopt(zmq.SUBSCRIBE, b'x')
 
     while True:
@@ -22,14 +24,29 @@ async def print_data(qin):
         data = await qin.get()
         print(data)
 
+async def pushKeys(qin):
+	userInput = UInput()
+	while True:
+		mtype, b = await qin.get()
+		if mtype==5: return 
+		if mtype==1:
+			userInput.write(e.EV_KEY, b, 1)
+		elif mtype==0:
+			userInput.write(e.EV_KEY, b, 0)
+		elif mtype==2:
+			userInput.write(e.EV_KEY, b, 2)
+		userInput.syn()
+
+
+
 async def main():
     qin = asyncio.Queue()
 
     task1 = asyncio.create_task(recvthings(qin))
-    task2 = asyncio.create_task(print_data(qin))
+    task2 = asyncio.create_task(pushKeys(qin))
+    await asyncio.gather(task1, task2)
 
-    await task1
-    await task2
 
 if __name__ == '__main__':
     asyncio.run(main())
+

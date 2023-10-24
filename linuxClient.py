@@ -15,7 +15,7 @@ config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.i
 # 5 quit
 
 
-def recvthings(qin, qoo):
+def recvthings(qin):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
 	socket.connect(config['DEFAULT']['ServerIP'])
@@ -40,18 +40,11 @@ def pushKeys(qin):
 		userInput.syn()
 
 
-def moveMouse(qoo):
-	userInput = UInput({
-		e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE],
-		e.EV_REL: [e.REL_X, e.REL_Y],
-		})
-
-
 if __name__ == '__main__':
 	qin = mp.Queue()
 	qoo = mp.Queue()
 
-	rt = mp.Process(target=recvthings,args=(qin, qoo))
+	rt = mp.Process(target=recvthings,args=(qin, ))
 	rt.start()
 
 	pushKeys(qin)

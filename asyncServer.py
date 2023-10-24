@@ -30,7 +30,7 @@ def getKeyboard(names):
 async def sendthings(qoo):
 	context = zmq.asyncio.Context()
 	socket = context.socket(zmq.PUB)
-	socket.bind("tcp://*:64024")
+	socket.bind("tcp://*:64023")
 
 	target = 'x'
 	while True:

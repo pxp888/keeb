@@ -6,11 +6,21 @@ import configparser
 config = configparser.ConfigParser()
 config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini'])
 
+
+# mtype, data
+# 0 keyup
+# 1 keydown
+# 2 keyhold
+# 3 keepalive
+# 4 change target (sender only)
+# 5 quit
+
+
 async def recvthings(qin):
     context = zmq.asyncio.Context()
     socket = context.socket(zmq.SUB)
-    # socket.connect(config['DEFAULT']['ServerIP'])
-    socket.connect("tcp://localhost:64024")
+    socket.connect(config['DEFAULT']['ServerIP'])
+    # socket.connect("tcp://localhost:64024")
     socket.setsockopt(zmq.SUBSCRIBE, b'x')
 
     while True:
@@ -19,10 +29,6 @@ async def recvthings(qin):
         if data[0]!=3: 
         	await qin.put(data)
 
-async def print_data(qin):
-    while True:
-        data = await qin.get()
-        print(data)
 
 async def pushKeys(qin):
 	userInput = UInput()
@@ -36,7 +42,6 @@ async def pushKeys(qin):
 		elif mtype==2:
 			userInput.write(e.EV_KEY, b, 2)
 		userInput.syn()
-
 
 
 async def main():

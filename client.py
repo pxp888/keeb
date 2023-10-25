@@ -3,9 +3,12 @@ import queue
 import zmq
 import win32api
 import win32con
-
-
+import configparser
 from keymap import win32map, extended_keys
+
+config = configparser.ConfigParser()
+config.read(['C:\\Users\\pxper\\Documents\\code\\keeb\\Config.ini'])
+
 
 # mtype, data
 # 0 keyup
@@ -19,7 +22,7 @@ from keymap import win32map, extended_keys
 def recvthings(qin):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
-	socket.connect("tcp://192.168.1.37:64023")
+	socket.connect(config['DEFAULT']['serverIP'])
 	socket.setsockopt(zmq.SUBSCRIBE, b'x')
 	while True:
 		topic = socket.recv_string()

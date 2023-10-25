@@ -11,16 +11,16 @@ import configparser
 # 1 keydown
 # 2 keyhold
 # 3 keepalive
-# 4 change target (sender only)
-
 
 
 config = configparser.ConfigParser()
 config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini'])
 
 userInput = UInput()
+target = 'x'
 
 def getKeyboard(names):
+	"""Returns the first keyboard found with a name in names"""
 	if not isinstance(names, list):
 		names = [names]
 	devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
@@ -35,16 +35,14 @@ def getKeyboard(names):
 
 
 async def sendthings(qoo):
+	"""Sends events to the clients"""
 	context = zmq.asyncio.Context()
 	socket = context.socket(zmq.PUB)
 	socket.bind("tcp://*:64023")
 
-	target = 'x'
+	global target 
 	while True:
 		mtype, data = await qoo.get()
-		if mtype == 4:
-			target = data
-			continue
 		if target=='z':
 			if mtype > 2: continue
 			userInput.write(e.EV_KEY, data, mtype)
@@ -55,21 +53,24 @@ async def sendthings(qoo):
 
 
 async def keepAlive(qoo):
+	"""keep the clients responsive"""
 	while True:
 		await qoo.put((3, 0))
 		await asyncio.sleep(.01)
 
 
 async def getKeys(qoo, deviceNames):
+	"""Gets key events from the keyboard and puts them in qoo"""
 	keyboard = getKeyboard(deviceNames)
 	if keyboard is None:
 		print('no keyboard found!')
 		return
 	
+	global target 
 	special = {}
-	special[184] = (4, 'x')
-	special[185] = (4, 'y')
-	special[186] = (4, 'z')
+	special[184] = 'x'
+	special[185] = 'y'
+	special[186] = 'z'
 
 	with keyboard.grab_context():
 		while True:
@@ -77,7 +78,7 @@ async def getKeys(qoo, deviceNames):
 				if event.type == evdev.ecodes.EV_KEY:
 					if event.code in special:
 						if event.value == 0:
-							await qoo.put(special[event.code])
+							target = special[event.code]
 						continue
 					await qoo.put((event.value, event.code))
 

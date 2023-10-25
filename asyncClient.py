@@ -12,8 +12,6 @@ config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.i
 # 1 keydown
 # 2 keyhold
 # 3 keepalive
-# 4 change target (sender only)
-# 5 quit
 
 
 async def recvthings(qin):
@@ -25,7 +23,7 @@ async def recvthings(qin):
     while True:
         topic = await socket.recv_string()
         data = await socket.recv_pyobj()
-        if data[0]!=3: 
+        if data[0] < 3: 
         	await qin.put(data)
 
 
@@ -33,7 +31,6 @@ async def pushKeys(qin):
 	userInput = UInput()
 	while True:
 		mtype, b = await qin.get()
-		if mtype==5: return 
 		userInput.write(e.EV_KEY, b, mtype)
 		userInput.syn()
 

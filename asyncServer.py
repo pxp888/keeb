@@ -5,11 +5,6 @@ import asyncio
 import zmq.asyncio
 import configparser
 
-config = configparser.ConfigParser()
-config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini'])
-
-userInput = UInput()
-
 
 # mtype, data
 # 0 keyup
@@ -17,8 +12,13 @@ userInput = UInput()
 # 2 keyhold
 # 3 keepalive
 # 4 change target (sender only)
-# 5 quit
 
+
+
+config = configparser.ConfigParser()
+config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini'])
+
+userInput = UInput()
 
 def getKeyboard(names):
 	if not isinstance(names, list):
@@ -45,6 +45,11 @@ async def sendthings(qoo):
 		if mtype == 4:
 			target = data
 			continue
+		if target=='z':
+			if mtype > 2: continue
+			userInput.write(e.EV_KEY, data, mtype)
+			userInput.syn()
+			continue
 		await socket.send_string(target, zmq.SNDMORE)
 		await socket.send_pyobj((mtype, data))
 
@@ -61,43 +66,28 @@ async def getKeys(qoo, deviceNames):
 		print('no keyboard found!')
 		return
 	
-	local = False
+	special = {}
+	special[184] = (4, 'x')
+	special[185] = (4, 'y')
+	special[186] = (4, 'z')
+
 	with keyboard.grab_context():
 		while True:
 			async for event in keyboard.async_read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
-					if event.code > 183 and event.code < 188:
+					if event.code in special:
 						if event.value == 0:
-							if event.code == 184:
-								local = False
-								await qoo.put((4, 'x'))
-							if event.code == 185:
-								local = False
-								await qoo.put((4, 'y'))
-							if event.code == 186:
-								local = True
-							if event.code == 187:
-								continue
-								# await qoo.put((5, 0))
-								# break
+							await qoo.put(special[event.code])
 						continue
-					if local:
-						localType(event.value, event.code)
-					else:
-						await qoo.put((event.value, event.code))
-
-
-def localType(value, code):
-	if value < 3:
-		userInput.write(e.EV_KEY, code, value)
-		userInput.syn()
+					await qoo.put((event.value, event.code))
 
 
 async def main():
 	await asyncio.sleep(1)
 	qoo = asyncio.Queue()
 	deviceNames = config['server']['DeviceNames'].split('|')
-	await asyncio.gather(sendthings(qoo), getKeys(qoo, deviceNames), keepAlive(qoo))
+	mediaNames = config['server']['MediaNames'].split('|')
+	await asyncio.gather(sendthings(qoo), getKeys(qoo, deviceNames), keepAlive(qoo), getKeys(qoo, mediaNames))
 
 
 if __name__ == '__main__':

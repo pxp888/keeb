@@ -40,10 +40,7 @@ async def pushKeys(qin):
 
 async def main():
     qin = asyncio.Queue()
-
-    task1 = asyncio.create_task(recvthings(qin))
-    task2 = asyncio.create_task(pushKeys(qin))
-    await asyncio.gather(task1, task2)
+    await asyncio.gather(recvthings(qin), pushKeys(qin))
 
 
 if __name__ == '__main__':

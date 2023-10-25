@@ -20,7 +20,6 @@ async def recvthings(qin):
     context = zmq.asyncio.Context()
     socket = context.socket(zmq.SUB)
     socket.connect(config['DEFAULT']['ServerIP'])
-    # socket.connect("tcp://localhost:64024")
     socket.setsockopt(zmq.SUBSCRIBE, b'x')
 
     while True:
@@ -35,12 +34,7 @@ async def pushKeys(qin):
 	while True:
 		mtype, b = await qin.get()
 		if mtype==5: return 
-		if mtype==1:
-			userInput.write(e.EV_KEY, b, 1)
-		elif mtype==0:
-			userInput.write(e.EV_KEY, b, 0)
-		elif mtype==2:
-			userInput.write(e.EV_KEY, b, 2)
+		userInput.write(e.EV_KEY, b, mtype)
 		userInput.syn()
 
 

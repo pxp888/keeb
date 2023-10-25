@@ -1,8 +1,6 @@
 import multiprocessing as mp
 import evdev
 from evdev import UInput, AbsInfo, ecodes as e
-import time
-import select
 import asyncio
 import zmq.asyncio
 import configparser
@@ -40,7 +38,7 @@ async def sendthings(qoo):
 	context = zmq.asyncio.Context()
 	socket = context.socket(zmq.PUB)
 	socket.bind("tcp://*:64023")
-	
+
 	target = 'x'
 	while True:
 		mtype, data = await qoo.get()

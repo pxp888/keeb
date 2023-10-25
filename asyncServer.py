@@ -88,26 +88,18 @@ async def getKeys(qoo, deviceNames):
 
 
 def localType(value, code):
-	if value == 1:
-		userInput.write(e.EV_KEY, code, 1)
-	elif value == 0:
-		userInput.write(e.EV_KEY, code, 0)
-	elif value == 2:
-		userInput.write(e.EV_KEY, code, 2)
-	userInput.syn()
+	if value < 3:
+		userInput.write(e.EV_KEY, code, value)
+		userInput.syn()
 
 
 async def main():
+	await asyncio.sleep(1)
 	qoo = asyncio.Queue()
 	deviceNames = config['server']['DeviceNames'].split('|')
-	task1 = asyncio.create_task(sendthings(qoo))
-	task2 = asyncio.create_task(getKeys(qoo, deviceNames))
-	task3 = asyncio.create_task(keepAlive(qoo))
-	await asyncio.gather(task1, task2, task3)
+	await asyncio.gather(sendthings(qoo), getKeys(qoo, deviceNames), keepAlive(qoo))
 
 
 if __name__ == '__main__':
 	asyncio.run(main())
-
-
 

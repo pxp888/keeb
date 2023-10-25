@@ -43,11 +43,6 @@ async def sendthings(qoo):
 	global target 
 	while True:
 		mtype, data = await qoo.get()
-		if target=='z':
-			if mtype > 2: continue
-			userInput.write(e.EV_KEY, data, mtype)
-			userInput.syn()
-			continue
 		await socket.send_string(target, zmq.SNDMORE)
 		await socket.send_pyobj((mtype, data))
 
@@ -57,6 +52,15 @@ async def keepAlive(qoo):
 	while True:
 		await qoo.put((3, 0))
 		await asyncio.sleep(.01)
+
+
+async def sendItem(value, code, qoo):
+	await qoo.put((value, code))
+
+
+async def localtype(value, code, qoo):
+	userInput.write(e.EV_KEY, code, value)
+	userInput.syn()
 
 
 async def getKeys(qoo, deviceNames):
@@ -71,6 +75,8 @@ async def getKeys(qoo, deviceNames):
 	targetCodes[184] = 'x'
 	targetCodes[185] = 'y'
 	targetCodes[186] = 'z'
+	handler = sendItem
+
 
 	with keyboard.grab_context():
 		while True:
@@ -79,8 +85,12 @@ async def getKeys(qoo, deviceNames):
 					if event.code in targetCodes:
 						if event.value == 0:
 							target = targetCodes[event.code]
+							if target == 'z':
+								handler = localtype
+							else:
+								handler = sendItem
 						continue
-					await qoo.put((event.value, event.code))
+					await handler(event.value, event.code, qoo)
 
 
 async def main():

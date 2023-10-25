@@ -1,4 +1,5 @@
-import multiprocessing as mp
+import threading 
+import queue
 import zmq
 import win32api
 import win32con
@@ -18,7 +19,7 @@ from keymap import win32map, extended_keys
 def recvthings(qin):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
-	socket.connect("tcp://192.168.1.36:64023")
+	socket.connect("tcp://192.168.1.37:64023")
 	socket.setsockopt(zmq.SUBSCRIBE, b'x')
 	while True:
 		topic = socket.recv_string()
@@ -54,10 +55,9 @@ def pushKeys(qin):
 			win32api.keybd_event(c, 0, down, 0)
 
 if __name__ == '__main__':
-	qin = mp.Queue()
-	rt = mp.Process(target=recvthings,args=(qin,))
+	qin = queue.Queue()
+	rt = threading.Thread(target=recvthings,args=(qin,))
 	rt.start()
 	pushKeys(qin)
 
-	rt.terminate()
 	

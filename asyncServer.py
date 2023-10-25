@@ -13,6 +13,15 @@ config.read(['/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.i
 userInput = UInput()
 
 
+# mtype, data
+# 0 keyup
+# 1 keydown
+# 2 keyhold
+# 3 keepalive
+# 4 change target (sender only)
+# 5 quit
+
+
 def getKeyboard(names):
 	if not isinstance(names, list):
 		names = [names]
@@ -31,7 +40,7 @@ async def sendthings(qoo):
 	context = zmq.asyncio.Context()
 	socket = context.socket(zmq.PUB)
 	socket.bind("tcp://*:64023")
-
+	
 	target = 'x'
 	while True:
 		mtype, data = await qoo.get()
@@ -41,17 +50,19 @@ async def sendthings(qoo):
 		await socket.send_string(target, zmq.SNDMORE)
 		await socket.send_pyobj((mtype, data))
 
+
 async def keepAlive(qoo):
 	while True:
 		await qoo.put((3, 0))
 		await asyncio.sleep(.01)
+
 
 async def getKeys(qoo, deviceNames):
 	keyboard = getKeyboard(deviceNames)
 	if keyboard is None:
 		print('no keyboard found!')
 		return
-
+	
 	local = False
 	with keyboard.grab_context():
 		while True:
@@ -76,6 +87,7 @@ async def getKeys(qoo, deviceNames):
 					else:
 						await qoo.put((event.value, event.code))
 
+
 def localType(value, code):
 	if value == 1:
 		userInput.write(e.EV_KEY, code, 1)
@@ -88,12 +100,12 @@ def localType(value, code):
 
 async def main():
 	qoo = asyncio.Queue()
-	
 	deviceNames = config['server']['DeviceNames'].split('|')
 	task1 = asyncio.create_task(sendthings(qoo))
 	task2 = asyncio.create_task(getKeys(qoo, deviceNames))
 	task3 = asyncio.create_task(keepAlive(qoo))
 	await asyncio.gather(task1, task2, task3)
+
 
 if __name__ == '__main__':
 	asyncio.run(main())

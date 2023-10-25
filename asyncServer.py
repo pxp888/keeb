@@ -67,18 +67,18 @@ async def getKeys(qoo, deviceNames):
 		return
 	
 	global target 
-	special = {}
-	special[184] = 'x'
-	special[185] = 'y'
-	special[186] = 'z'
+	targetCodes = {}
+	targetCodes[184] = 'x'
+	targetCodes[185] = 'y'
+	targetCodes[186] = 'z'
 
 	with keyboard.grab_context():
 		while True:
 			async for event in keyboard.async_read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
-					if event.code in special:
+					if event.code in targetCodes:
 						if event.value == 0:
-							target = special[event.code]
+							target = targetCodes[event.code]
 						continue
 					await qoo.put((event.value, event.code))
 

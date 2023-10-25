@@ -18,8 +18,7 @@ async def recvthings(qin):
     context = zmq.asyncio.Context()
     socket = context.socket(zmq.SUB)
     socket.connect(config['DEFAULT']['ServerIP'])
-    socket.setsockopt(zmq.SUBSCRIBE, b'x')
-
+    socket.setsockopt(zmq.SUBSCRIBE, config['DEFAULT']['clientID'].encode('utf-8'))
     while True:
         topic = await socket.recv_string()
         data = await socket.recv_pyobj()

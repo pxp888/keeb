@@ -9,7 +9,7 @@ from asyncio import WindowsSelectorEventLoopPolicy
 asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
 
 config = configparser.ConfigParser()
-config.read(['C:\\Users\\pxper\\Documents\\Config.ini'])
+config.read(['C:\\Users\\pxper\\Documents\\Config.ini','C:\\Users\\pxper\\Documents\\code\\keeb\\Config.ini'])
 
 
 # mtype, data

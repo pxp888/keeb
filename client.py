@@ -7,7 +7,7 @@ import configparser
 from keymap import win32map, extended_keys
 
 config = configparser.ConfigParser()
-config.read(['C:\\Users\\pxper\\Documents\\Config.ini'])
+config.read(['C:\\Users\\pxper\\Documents\\Config.ini','C:\\Users\\pxper\\Documents\\code\\keeb\\Config.ini'])
 
 
 # mtype, data

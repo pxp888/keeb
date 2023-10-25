@@ -77,8 +77,9 @@ async def getKeys(qoo, deviceNames):
 							if event.code == 186:
 								local = True
 							if event.code == 187:
-								await qoo.put((5, 0))
-								break
+								continue
+								# await qoo.put((5, 0))
+								# break
 						continue
 					if local:
 						localType(event.value, event.code)

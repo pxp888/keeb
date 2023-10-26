@@ -7,11 +7,7 @@ import configparser
 import os 
 
 
-"""message types"""
-# 0 keyup
-# 1 keydown
-# 2 keyhold
-# 3 keepalive
+
 
 
 """Global Variables"""
@@ -28,24 +24,24 @@ async def sendthings(qoo):
 
 	global target 
 	while True:
-		mtype, data = await qoo.get()
+		etype, value, code = await qoo.get()
 		await socket.send_string(target, zmq.SNDMORE)
-		await socket.send_pyobj((mtype, data))
+		await socket.send_pyobj((etype, value, code))
 
 
 async def keepAlive(qoo):
 	"""keep the clients responsive"""
 	while True:
-		await qoo.put((3, 0))
+		await qoo.put((23, 0, 0))
 		await asyncio.sleep(.01)
 
 
-async def sendItem(value, code, qoo):
-	await qoo.put((value, code))
+async def sendItem(etype, value, code, qoo):
+	await qoo.put((etype, value, code))
 
 
-async def localtype(value, code, qoo):
-	userInput.write(e.EV_KEY, code, value)
+async def localtype(etype, value, code, qoo):
+	userInput.write(etype, code, value)
 	userInput.syn()
 
 
@@ -71,7 +67,7 @@ async def getKeys(qoo, device):
 							else:
 								handler = sendItem
 						continue
-					await handler(event.value, event.code, qoo)
+					await handler(event.type, event.value, event.code, qoo)
 
 
 async def main():

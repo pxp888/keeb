@@ -5,12 +5,6 @@ import configparser
 import os 
 
 
-"""message types """
-# 0 keyup
-# 1 keydown
-# 2 keyhold
-# 3 keepalive
-
 
 """Global Variables"""
 config = configparser.ConfigParser()
@@ -24,15 +18,15 @@ async def recvthings(qin):
     while True:
         topic = await socket.recv_string()
         data = await socket.recv_pyobj()
-        if data[0] < 3: 
+        if data[0] != 23: 
         	await qin.put(data)
 
 
 async def pushKeys(qin):
 	userInput = UInput()
 	while True:
-		mtype, b = await qin.get()
-		userInput.write(e.EV_KEY, b, mtype)
+		etype, value, code = await qin.get()
+		userInput.write(etype, code, value)
 		userInput.syn()
 
 

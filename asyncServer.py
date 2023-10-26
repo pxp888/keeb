@@ -71,7 +71,6 @@ async def getKeys(qoo, device):
 	targetCodes[185] = 'y'
 	targetCodes[186] = 'z'
 	
-
 	with device.grab_context():
 		while True:
 			async for event in device.async_read_loop():

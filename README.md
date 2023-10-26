@@ -1,82 +1,71 @@
 # keeb
-keyboard sharing client and server
+keyboard and mouse sharing client and server
 
-These scripts redirect keystrokes from one computer to another. The server is the computer that has the keyboard, and the client is the computer that receives the keystrokes. 
+These scripts redirect keyboard and mouse inputs from a server machine to client machines.  
+
+Target machines can be switched on the fly with a single hotkey.  
+
 
 ## Potential features
 
 - on the fly macros
-- 
-
-## Message format
-
-  |  mtype|data|
-|---|---|
-|0|keyup
-|1| keydown
-|2| keyhold
-|3|keepalive
-|4| change target (sender only)
-|5| quit
+- fuzzy logic autocomplete 
+    - python's fuzzywuzzy library would be perfect for this. 
 
 
-## __serve.py__
+## __asyncServer.py__
 
 ```mermaid
 graph LR
 
-gk("getkeys()")
+gk1("getkeys()")
+gk2("getkeys()")
+gk3("getkeys()")
+
 ka("keepalive()")
-qoo(qoo)
+
+si("sendItem()")
 st("sendthings()")
 lt("localtype()")
 
+ui([virtual keyboard])
+mi([virtual Mouse])
 
-gk & ka --> qoo --> st
-gk --> lt
-st --> x & y
-
-subgraph "main thread"
-    gk
-    lt
+subgraph getKeys
+    direction LR
+    gk1
+    gk2
+    gk3
 end
 
-subgraph "keepalive"
-    ka
-end
-
-subgraph "send"
-    st
-end
-
-subgraph "media keys"
-    gk2("getkeys()")
-end
-gk2 --> qoo
-
-
+ka --> st
+getKeys --> si & lt
+si --> st
+lt --> ui & mi
 ```
 
-
-## __linuxClient.py__
+## __asyncClient.py__
 
 ```mermaid
 graph LR
+
 rcv("recvthings()")
-pk("pushkeys()")
+ds("doStuff()")
+ui([virtual keyboard])
+mi([virtual Mouse])
 
-qin(qin)
-
-rcv --> qin --> pk
-
-subgraph "receive process"
-    rcv
-end
+rcv --> ds --> ui & mi
 
 
 ```
 
-### evdev Event Types
+### Message Event Types
+
+While it would be trivial to support all messege types, as of this writing only events to handle keyboard and mouse inputs are used.  
+
+In addition to the standard evdev event types a keepAlive type is used to maintain a responsive connection.  This event type is not part of the evdev framework.  It is sent multiple times a second to maintain a responsive connection.  Without this constant stream the latency becomes highly variable.  
+
+
 
 |Type|ENUM|Description|
 |-|-|-|

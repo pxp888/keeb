@@ -8,11 +8,13 @@ import os
 
 
 
-
-
 """Global Variables"""
 config = configparser.ConfigParser()
 userInput = UInput()
+mouseInput = UInput({
+	e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE, e.BTN_SIDE, e.BTN_EXTRA], 
+	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL], })
+msv = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
 target = 'x'
 
 
@@ -38,22 +40,37 @@ async def keepAlive(qoo):
 
 async def sendItem(etype, value, code, qoo):
 	await qoo.put((etype, value, code))
-
+	
 
 async def localtype(etype, value, code, qoo):
-	userInput.write(etype, code, value)
-	userInput.syn()
+	if etype == e.EV_KEY:
+		if code >= 272 and code <= 276:
+			mouseInput.write(e.EV_MSC, 4, msv[code])
+			mouseInput.write(etype, code, value)
+			mouseInput.syn()
+			return
+		userInput.write(etype, code, value)
+		userInput.syn()
+	elif etype == e.EV_REL:
+		mouseInput.write(etype, code, value)
+		mouseInput.syn()
+	elif etype == 23:
+		return 
+
+
+handler = sendItem
 
 
 async def getKeys(qoo, device):
 	"""Gets key events from the keyboard and puts them in qoo"""
 
 	global target
+	global handler
 	targetCodes = {}
 	targetCodes[184] = 'x'
 	targetCodes[185] = 'y'
 	targetCodes[186] = 'z'
-	handler = sendItem
+	
 
 	with device.grab_context():
 		while True:
@@ -67,7 +84,9 @@ async def getKeys(qoo, device):
 							else:
 								handler = sendItem
 						continue
-				await handler(event.type, event.value, event.code, qoo)
+					await handler(event.type, event.value, event.code, qoo)
+				elif event.type == evdev.ecodes.EV_REL:
+					await handler(event.type, event.value, event.code, qoo)
 
 
 async def main():

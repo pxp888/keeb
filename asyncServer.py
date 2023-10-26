@@ -4,7 +4,7 @@ from evdev import UInput, AbsInfo, ecodes as e
 import asyncio
 import zmq.asyncio
 import configparser
-import os 
+import os
 
 
 
@@ -22,7 +22,7 @@ async def sendthings(qoo):
 	socket = context.socket(zmq.PUB)
 	socket.bind("tcp://*:64023")
 
-	global target 
+	global target
 	while True:
 		etype, value, code = await qoo.get()
 		await socket.send_string(target, zmq.SNDMORE)
@@ -47,8 +47,8 @@ async def localtype(etype, value, code, qoo):
 
 async def getKeys(qoo, device):
 	"""Gets key events from the keyboard and puts them in qoo"""
-	
-	global target 
+
+	global target
 	targetCodes = {}
 	targetCodes[184] = 'x'
 	targetCodes[185] = 'y'
@@ -67,7 +67,7 @@ async def getKeys(qoo, device):
 							else:
 								handler = sendItem
 						continue
-					await handler(event.type, event.value, event.code, qoo)
+				await handler(event.type, event.value, event.code, qoo)
 
 
 async def main():
@@ -85,7 +85,7 @@ async def main():
 
 	await asyncio.sleep(1) # make sure keys are not pressed when devices are captured
 	qoo = asyncio.Queue()
-	
+
 	# Set up devices
 	tasks = []
 	targetDevices = config['server']['DeviceNames'].split('|')
@@ -96,7 +96,7 @@ async def main():
 				print('Capturing : ', device.name)
 				task = asyncio.create_task(getKeys(qoo, device))
 				tasks.append(task)
-	
+
 	await asyncio.gather(*tasks, sendthings(qoo), keepAlive(qoo))
 
 

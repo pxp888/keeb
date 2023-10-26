@@ -2,9 +2,19 @@ from evdev import UInput, ecodes as e
 import asyncio
 import zmq.asyncio
 import configparser
+import os 
 
 config = configparser.ConfigParser()
-config.read(['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini'])
+paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini']
+for path in paths:
+    if os.path.exists(path):
+        cfi = config.read(path)
+        print(cfi)
+        print(config['DEFAULT']['serverip'])
+        break
+    else:
+        print("Config file not found at " + path)
+        continue
 
 # mtype, data
 # 0 keyup

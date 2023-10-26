@@ -4,23 +4,16 @@ import zmq.asyncio
 import configparser
 import os 
 
-config = configparser.ConfigParser()
-paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini']
-for path in paths:
-    if os.path.exists(path):
-        cfi = config.read(path)
-        print(cfi)
-        print(config['DEFAULT']['serverip'])
-        break
-    else:
-        print("Config file not found at " + path)
-        continue
 
-# mtype, data
+"""message types """
 # 0 keyup
 # 1 keydown
 # 2 keyhold
 # 3 keepalive
+
+
+"""Global Variables"""
+config = configparser.ConfigParser()
 
 
 async def recvthings(qin):
@@ -44,6 +37,18 @@ async def pushKeys(qin):
 
 
 async def main():
+    paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini']
+    for path in paths:
+        if os.path.exists(path):
+            cfi = config.read(path)
+            print(cfi)
+            print(config['DEFAULT']['serverip'])
+            break
+        else:
+            print("Config file not found at " + path)
+            continue
+
+
     qin = asyncio.Queue()
     await asyncio.gather(recvthings(qin), pushKeys(qin))
 

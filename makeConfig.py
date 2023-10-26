@@ -8,7 +8,6 @@ mediaNames = ['Keebio Keebio Iris Rev. 4 Consumer Control', 'OLKB Planck Light C
 
 config['server'] = {}
 config.set('server', 'DeviceNames', '|'.join(deviceNames))
-config.set('server', 'MediaNames', '|'.join(mediaNames))
 
 with open('Config.ini', 'w') as configfile:
 	config.write(configfile)

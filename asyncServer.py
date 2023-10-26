@@ -6,41 +6,18 @@ import zmq.asyncio
 import configparser
 import os 
 
-# mtype, data
+
+"""message types"""
 # 0 keyup
 # 1 keydown
 # 2 keyhold
 # 3 keepalive
 
 
+"""Global Variables"""
 config = configparser.ConfigParser()
-paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini']
-for path in paths:
-    if os.path.exists(path):
-        cfi = config.read(path)
-        print(cfi)
-        print(config['DEFAULT']['serverip'])
-        break
-    else:
-        print("Config file not found at " + path)
-        continue
-
 userInput = UInput()
 target = 'x'
-
-def getKeyboard(names):
-	"""Returns the first keyboard found with a name in names"""
-	if not isinstance(names, list):
-		names = [names]
-	devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
-	for device in devices:
-		if device.name in names:
-			print(device.name)
-			print(device.phys)
-			print(device.info)
-			print('------------------')
-			return device
-	return None
 
 
 async def sendthings(qoo):
@@ -72,12 +49,8 @@ async def localtype(value, code, qoo):
 	userInput.syn()
 
 
-async def getKeys(qoo, deviceNames):
+async def getKeys(qoo, device):
 	"""Gets key events from the keyboard and puts them in qoo"""
-	keyboard = getKeyboard(deviceNames)
-	if keyboard is None:
-		print('no keyboard found!')
-		return
 	
 	global target 
 	targetCodes = {}
@@ -86,10 +59,9 @@ async def getKeys(qoo, deviceNames):
 	targetCodes[186] = 'z'
 	handler = sendItem
 
-
-	with keyboard.grab_context():
+	with device.grab_context():
 		while True:
-			async for event in keyboard.async_read_loop():
+			async for event in device.async_read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
 					if event.code in targetCodes:
 						if event.value == 0:
@@ -103,11 +75,33 @@ async def getKeys(qoo, deviceNames):
 
 
 async def main():
-	await asyncio.sleep(1)
+	# Set up config
+	paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini']
+	for path in paths:
+		if os.path.exists(path):
+			cfi = config.read(path)
+			print(cfi)
+			print(config['DEFAULT']['serverip'])
+			break
+		else:
+			print("Config file not found at " + path)
+			continue
+
+	await asyncio.sleep(1) # make sure keys are not pressed when devices are captured
 	qoo = asyncio.Queue()
-	deviceNames = config['server']['DeviceNames'].split('|')
-	mediaNames = config['server']['MediaNames'].split('|')
-	await asyncio.gather(sendthings(qoo), getKeys(qoo, deviceNames), keepAlive(qoo), getKeys(qoo, mediaNames))
+	
+	# Set up devices
+	tasks = []
+	targetDevices = config['server']['DeviceNames'].split('|')
+	devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
+	for device in devices:
+		for t in targetDevices:
+			if t in device.name:
+				print('Capturing : ', device.name)
+				task = asyncio.create_task(getKeys(qoo, device))
+				tasks.append(task)
+	
+	await asyncio.gather(*tasks, sendthings(qoo), keepAlive(qoo))
 
 
 if __name__ == '__main__':

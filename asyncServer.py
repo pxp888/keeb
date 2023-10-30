@@ -7,7 +7,6 @@ import configparser
 import os
 
 
-
 """Global Variables"""
 config = configparser.ConfigParser()
 userInput = UInput()
@@ -16,15 +15,15 @@ mouseInput = UInput({
 	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL], })
 msv = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
 target = 'x'
+scroll = 0.0  # for mouse wheel
 
 
 async def sendthings(qoo):
 	"""Sends events to the clients"""
+	global target
 	context = zmq.asyncio.Context()
 	socket = context.socket(zmq.PUB)
 	socket.bind("tcp://*:64023")
-
-	global target
 	while True:
 		etype, value, code = await qoo.get()
 		await socket.send_string(target, zmq.SNDMORE)
@@ -61,11 +60,22 @@ async def localtype(etype, value, code, qoo):
 handler = sendItem
 
 
+async def scrollFunc(etype, value, code, qoo):
+	"""translates mouse translation to mouse wheel events, for custom scroll wheel"""
+	global scroll
+	if code == 1:
+		code = 8
+		scroll += float(value*0.1)
+		value = int(scroll)
+		scroll -= float(value)
+	await sendItem(etype, value, code, qoo)
+
+
 async def getKeys(qoo, device):
 	"""Gets key events from the keyboard and puts them in qoo"""
-
 	global target
 	global handler
+
 	targetCodes = {}
 	targetCodes[184] = 'x'
 	targetCodes[185] = 'y'
@@ -85,8 +95,8 @@ async def getKeys(qoo, device):
 						continue
 					await handler(event.type, event.value, event.code, qoo)
 				elif event.type == evdev.ecodes.EV_REL:
-					await handler(event.type, event.value, event.code, qoo)
-
+					# await handler(event.type, event.value, event.code, qoo)
+					await scrollFunc(event.type, event.value, event.code, qoo)
 
 async def main():
 	# Set up config

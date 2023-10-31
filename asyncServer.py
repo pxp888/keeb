@@ -63,6 +63,13 @@ handler = sendItem
 async def scrollFunc(etype, value, code, qoo):
 	"""translates mouse translation to mouse wheel events, for custom scroll wheel"""
 	global scroll
+	if code==8:
+		if value > 0:
+			await sendItem(e.EV_KEY, 1, 115, qoo)
+			await sendItem(e.EV_KEY, 0, 115, qoo)
+		elif value < 0:
+			await sendItem(e.EV_KEY, 1, 114, qoo)
+			await sendItem(e.EV_KEY, 0, 114, qoo)
 	if code == 1:
 		code = 8
 		scroll += float(value*0.1)

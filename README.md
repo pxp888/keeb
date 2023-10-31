@@ -5,6 +5,26 @@ These scripts redirect keyboard and mouse inputs from a server machine to client
 
 Target machines can be switched on the fly with a single hotkey.  
 
+This is very similar to synergy, although it enables altering or automating the behavior of the keyboard and mouse inputs.
+
+## Features
+
+- Keyboard and mouse sharing
+- Switch target machines on the fly
+- Scroll mode for mouse inputs (scrolling is sent to the target machine)
+- Volume control with mouse wheel in scroll mode
+- Scroll mode can be local with __scrollmouse.py__
+
+
+## Requirements
+
+
+|Linux Server|Linux Client|Windows Client|
+|-|-|-|
+|python3|python3|python3|
+|python3-evdev|python3-evdev|pywin32|
+|pyzmq|pyzmq|pyzmq|
+
 
 ## Potential features
 
@@ -13,7 +33,7 @@ Target machines can be switched on the fly with a single hotkey.
     - python's fuzzywuzzy library would be perfect for this. 
 
 
-## __asyncServer.py__
+### __asyncServer.py__
 
 ```mermaid
 graph LR
@@ -43,8 +63,10 @@ getKeys --> si & lt
 si --> st
 lt --> ui & mi
 ```
+This runs on the machine that is sharing inputs.  It captures the keyboard and mouse inputs and sends them either to the client machines, or to the local machine.
 
-## __asyncClient.py__
+
+### __asyncClient.py__
 
 ```mermaid
 graph LR
@@ -56,10 +78,18 @@ mi([virtual Mouse])
 
 rcv --> ds --> ui & mi
 
-
 ```
+This runs on the target machines. It receives the inputs from the server and sends them to the virtual keyboard and mouse.
 
-### Message Event Types
+### __winClient.py__
+Identical to asyncClient.py, but uses pywin32 instead of evdev.  This is for windows machines.
+
+### scrollmouse.py
+This provides __"scroll mode"__ functionality, but on a local computer.  
+
+
+
+## Message Event Types
 
 While it would be trivial to support all messege types, as of this writing only events to handle keyboard and mouse inputs are used.  
 

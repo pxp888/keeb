@@ -27,34 +27,54 @@ async def recvthings(qin):
 	while True:
 		topic = await socket.recv_string()
 		data = await socket.recv_pyobj()
-		if data[0] < 3: 
+		if data[0] < 23: 
 			# print(topic, data)
 			await qin.put(data)
 
 
 async def pushKeys(qin):
+	mouseDown = {272:win32con.MOUSEEVENTF_LEFTDOWN, 273:win32con.MOUSEEVENTF_RIGHTDOWN, 274:win32con.MOUSEEVENTF_MIDDLEDOWN}
+	mouseUp = {272:win32con.MOUSEEVENTF_LEFTUP, 273:win32con.MOUSEEVENTF_RIGHTUP, 274:win32con.MOUSEEVENTF_MIDDLEUP}
+
 	while True:
-		mtype, b = await qin.get()
-		if b in extended_keys:
-			down = 0|win32con.KEYEVENTF_EXTENDEDKEY
-			up = win32con.KEYEVENTF_EXTENDEDKEY | win32con.KEYEVENTF_KEYUP
-			c = extended_keys[b]
-		else:
-			down = 0 
-			up = win32con.KEYEVENTF_KEYUP
-			try:
-				c = win32map[b]
-			except KeyError:
-				print('Key not found:', b)
+		etype, value, code = await qin.get()
+		print(etype, value, code)
+
+		if etype == 1:
+			if code in mouseDown:
+				if value == 1:
+					win32api.mouse_event(mouseDown[code], 0, 0, 0, 0)
+				elif value == 0:
+					win32api.mouse_event(mouseUp[code], 0, 0, 0, 0)
 				continue
 
-		if mtype==1:
-			win32api.keybd_event(c, 0, down, 0)
-		elif mtype==0:
-			win32api.keybd_event(c, 0, up, 0)
-		elif mtype==2:
-			win32api.keybd_event(c, 0, up, 0)
-			win32api.keybd_event(c, 0, down, 0)
+			if code in extended_keys:
+				down = 0|win32con.KEYEVENTF_EXTENDEDKEY
+				up = win32con.KEYEVENTF_EXTENDEDKEY | win32con.KEYEVENTF_KEYUP
+				c = extended_keys[code]
+			else:
+				down = 0 
+				up = win32con.KEYEVENTF_KEYUP
+				try:
+					c = win32map[code]
+				except KeyError:
+					print('Key not found:', code)
+					continue
+
+			if value == 1:
+				win32api.keybd_event(c, 0, down, 0)
+			elif value == 0:
+				win32api.keybd_event(c, 0, up, 0)
+			elif value == 2:
+				win32api.keybd_event(c, 0, up, 0)
+				win32api.keybd_event(c, 0, down, 0)
+		elif etype == 2:
+			if code == 0:
+				win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, int(value), 0, 0, 0)
+			elif code == 1:
+				win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, 0, int(value), 0, 0)
+			elif code == 8:
+				win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, 120*value, 0)
 
 async def main():
 	qin = asyncio.Queue()

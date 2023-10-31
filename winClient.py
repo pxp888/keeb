@@ -12,13 +12,6 @@ config = configparser.ConfigParser()
 config.read(['C:\\Users\\pxper\\Documents\\Config.ini','C:\\Users\\pxper\\Documents\\code\\keeb\\Config.ini'])
 
 
-# mtype, data
-# 0 keyup
-# 1 keydown
-# 2 keyhold
-# 3 keepalive
-
-
 async def recvthings(qin):
 	context = zmq.asyncio.Context()
 	socket = context.socket(zmq.SUB)
@@ -38,8 +31,6 @@ async def pushKeys(qin):
 
 	while True:
 		etype, value, code = await qin.get()
-		print(etype, value, code)
-
 		if etype == 1:
 			if code in mouseDown:
 				if value == 1:
@@ -75,6 +66,7 @@ async def pushKeys(qin):
 				win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, 0, int(value), 0, 0)
 			elif code == 8:
 				win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, 120*value, 0)
+
 
 async def main():
 	qin = asyncio.Queue()

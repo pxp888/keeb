@@ -10,7 +10,7 @@ config = configparser.ConfigParser()
 userInput = UInput()
 mouseInput = UInput({
 	e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE, e.BTN_SIDE, e.BTN_EXTRA], 
-	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL], })
+	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL, e.REL_HWHEEL], })
 msv = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
 
 

@@ -15,7 +15,8 @@ mouseInput = UInput({
 	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL], })
 msv = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
 target = 'x'
-scroll = 0.0  # for mouse wheel
+vScroll = 0.0  # for mouse wheel
+hScroll = 0.0  # for mouse wheel
 
 
 async def sendthings(qoo):
@@ -62,20 +63,33 @@ handler = sendItem
 
 async def scrollFunc(etype, value, code, qoo):
 	"""translates mouse translation to mouse wheel events, for custom scroll wheel"""
-	global scroll
+	global vScroll
+	global hScroll
 	if code==8:
 		if value > 0:
 			await sendItem(e.EV_KEY, 1, 115, qoo)
 			await sendItem(e.EV_KEY, 0, 115, qoo)
+			return
 		elif value < 0:
 			await sendItem(e.EV_KEY, 1, 114, qoo)
 			await sendItem(e.EV_KEY, 0, 114, qoo)
+			return
 	if code == 1:
-		code = 8
-		scroll += float(value*0.1)
-		value = int(scroll)
-		scroll -= float(value)
-	await sendItem(etype, value, code, qoo)
+		code = e.REL_WHEEL
+		vScroll += float(value*0.1)
+		value = int(vScroll)
+		vScroll -= float(value)
+		value = value * -1
+		await sendItem(etype, value, code, qoo)
+		return
+	if code == 0:
+		code = e.REL_HWHEEL
+		hScroll += float(value*0.075)
+		value = int(hScroll)
+		hScroll -= float(value)
+		# value = value * -1
+		await sendItem(etype, value, code, qoo)
+		return
 
 
 async def getKeys(qoo, device):

@@ -58,7 +58,6 @@ async def localtype(etype, value, code, qoo):
 		return 
 
 
-handler = sendItem
 
 
 async def scrollFunc(etype, value, code, qoo):
@@ -92,32 +91,45 @@ async def scrollFunc(etype, value, code, qoo):
 		return
 
 
+handler = sendItem
+mousehandler = scrollFunc
+
+
 async def getKeys(qoo, device):
 	"""Gets key events from the keyboard and puts them in qoo"""
 	global target
 	global handler
-
-	targetCodes = {}
-	targetCodes[184] = 'x'
-	targetCodes[185] = 'y'
-	targetCodes[186] = 'z'
+	global mousehandler
 	
+	specialCodes = {}
+	specialCodes[184] = ('target','x')
+	specialCodes[185] = ('target','y')
+	specialCodes[186] = ('target','z')
+	specialCodes[276] = ('scrollToggle',0)
+
 	with device.grab_context():
 		while True:
 			async for event in device.async_read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
-					if event.code in targetCodes:
+					if event.code in specialCodes:
 						if event.value == 0:
-							target = targetCodes[event.code]
-							if target == 'z':
-								handler = localtype
-							else:
-								handler = sendItem
+							com = specialCodes[event.code]
+							if com[0] == 'target':
+								target = com[1]
+								if target == 'z':
+									handler = localtype
+								else:
+									handler = sendItem
+							if com[0] == 'scrollToggle':
+								if mousehandler == scrollFunc:
+									mousehandler = sendItem
+								else:
+									mousehandler = scrollFunc
 						continue
 					await handler(event.type, event.value, event.code, qoo)
 				elif event.type == evdev.ecodes.EV_REL:
 					# await handler(event.type, event.value, event.code, qoo)
-					await scrollFunc(event.type, event.value, event.code, qoo)
+					await mousehandler(event.type, event.value, event.code, qoo)
 
 async def main():
 	# Set up config

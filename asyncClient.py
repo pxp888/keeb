@@ -38,6 +38,7 @@ async def doStuff(qin):
 			userInput.write(etype, code, value)
 			userInput.syn()
 		elif etype == e.EV_REL:
+			value = value * 2
 			mouseInput.write(etype, code, value)
 			mouseInput.syn()
 		elif etype == 23:

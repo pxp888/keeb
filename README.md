@@ -3,9 +3,10 @@ keyboard and mouse sharing client and server
 
 These scripts redirect keyboard and mouse inputs from a server machine to client machines.  
 
-Target machines can be switched on the fly with a single hotkey.  
+Target machines can be switched on the fly with a hotkey.  
 
-This is very similar to synergy, although it enables altering or automating the behavior of the keyboard and mouse inputs.
+This is very similar to [synergy](https://symless.com/synergy), although it enables altering or automating the behavior of the keyboard and mouse inputs.
+
 
 ## Features
 

@@ -58,18 +58,21 @@ async def localtype(etype, value, code, qoo):
 		return 
 
 
+handler = sendItem  # or localtype, for keyboard events
+
+
 async def scrollFunc(etype, value, code, qoo):
 	"""translates mouse translation to mouse wheel events, for custom scroll wheel"""
 	global vScroll
 	global hScroll
 	if code==8:
 		if value > 0:
-			await sendItem(e.EV_KEY, 1, 115, qoo)
-			await sendItem(e.EV_KEY, 0, 115, qoo)
+			await handler(e.EV_KEY, 1, 115, qoo)
+			await handler(e.EV_KEY, 0, 115, qoo)
 			return
 		elif value < 0:
-			await sendItem(e.EV_KEY, 1, 114, qoo)
-			await sendItem(e.EV_KEY, 0, 114, qoo)
+			await handler(e.EV_KEY, 1, 114, qoo)
+			await handler(e.EV_KEY, 0, 114, qoo)
 			return
 	if code == 1:
 		code = e.REL_WHEEL
@@ -77,7 +80,7 @@ async def scrollFunc(etype, value, code, qoo):
 		value = int(vScroll)
 		vScroll -= float(value)
 		value = value * -1
-		await sendItem(etype, value, code, qoo)
+		await handler(etype, value, code, qoo)
 		return
 	if code == 0:
 		code = e.REL_HWHEEL
@@ -85,11 +88,10 @@ async def scrollFunc(etype, value, code, qoo):
 		value = int(hScroll)
 		hScroll -= float(value)
 		# value = value * -1
-		await sendItem(etype, value, code, qoo)
+		await handler(etype, value, code, qoo)
 		return
 
 
-handler = sendItem  # or localtype, for keyboard events
 mousehandler = scrollFunc  # or sendItem, for mouse events
 
 
@@ -101,7 +103,7 @@ async def getKeys(qoo, device):
 	
 	specialCodes = {}
 	specialCodes[184] = ('target','x')
-	specialCodes[185] = ('target','y')
+	specialCodes[185] = ('scrollToggle',0)
 	specialCodes[186] = ('target','local')
 	specialCodes[276] = ('scrollToggle',0)
 
@@ -118,9 +120,9 @@ async def getKeys(qoo, device):
 								handler = localtype
 							else:
 								handler = sendItem
-						if com[0] == 'scrollToggle':
+						elif com[0] == 'scrollToggle':
 							if mousehandler == scrollFunc:
-								mousehandler = sendItem
+								mousehandler = handler
 							else:
 								mousehandler = scrollFunc
 					else:
@@ -135,11 +137,11 @@ async def main():
 	for path in paths:
 		if os.path.exists(path):
 			cfi = config.read(path)
+			print('Config file : ', path)
 			print(cfi)
 			print(config['DEFAULT']['serverip'])
 			break
 		else:
-			print("Config file not found at " + path)
 			continue
 
 	await asyncio.sleep(1) # make sure keys are not pressed when devices are captured

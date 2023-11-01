@@ -7,6 +7,9 @@ Target machines can be switched on the fly with a hotkey.
 
 This is very similar to [synergy](https://symless.com/synergy), although it enables altering or automating the behavior of the keyboard and mouse inputs.
 
+## Usage
+
+The primary use case for this is to use a raspberry pi "cyberdeck" as a keyboard for a PC.  This would offer many possibilities for automation and customization.  
 
 ## Features
 

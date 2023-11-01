@@ -12,16 +12,7 @@ from asyncServer import *
 async def mousemain():
 	# Set up config
 	paths = ['/home/pxp/Documents/mouse.ini','/home/pxp/Documents/code/keeb/mouse.ini','/home/pxp/keeb/mouse.ini']
-	for path in paths:
-		if os.path.exists(path):
-			cfi = config.read(path)
-			print('Config file : ', path)
-			print(cfi)
-			print(config['DEFAULT']['serverip'])
-			break
-		else:
-			continue
-
+	setConfig(paths)
 
 	await asyncio.sleep(1) # make sure keys are not pressed when devices are captured
 	qoo = asyncio.Queue()

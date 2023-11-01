@@ -14,6 +14,19 @@ mouseInput = UInput({
 msv = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
 
 
+def setConfig(paths):
+	global config
+	for path in paths:
+		if os.path.exists(path):
+			cfi = config.read(path)
+			print('Config file : ', path)
+			print(cfi)
+			print(config['DEFAULT']['serverip'])
+			return
+		else:
+			continue
+
+
 async def recvthings(qin):
 	context = zmq.asyncio.Context()
 	socket = context.socket(zmq.SUB)
@@ -47,16 +60,7 @@ async def doStuff(qin):
 
 async def main():
 	paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini']
-	for path in paths:
-		if os.path.exists(path):
-			cfi = config.read(path)
-			print(cfi)
-			print(config['DEFAULT']['serverip'])
-			break
-		else:
-			print("Config file not found at " + path)
-			continue
-
+	setConfig(paths)
 
 	qin = asyncio.Queue()
 	await asyncio.gather(recvthings(qin), doStuff(qin))

@@ -58,8 +58,6 @@ async def localtype(etype, value, code, qoo):
 		return 
 
 
-
-
 async def scrollFunc(etype, value, code, qoo):
 	"""translates mouse translation to mouse wheel events, for custom scroll wheel"""
 	global vScroll
@@ -91,8 +89,8 @@ async def scrollFunc(etype, value, code, qoo):
 		return
 
 
-handler = sendItem
-mousehandler = scrollFunc
+handler = sendItem  # or localtype, for keyboard events
+mousehandler = scrollFunc  # or sendItem, for mouse events
 
 
 async def getKeys(qoo, device):
@@ -104,7 +102,7 @@ async def getKeys(qoo, device):
 	specialCodes = {}
 	specialCodes[184] = ('target','x')
 	specialCodes[185] = ('target','y')
-	specialCodes[186] = ('target','z')
+	specialCodes[186] = ('target','local')
 	specialCodes[276] = ('scrollToggle',0)
 
 	with device.grab_context():
@@ -112,28 +110,28 @@ async def getKeys(qoo, device):
 			async for event in device.async_read_loop():
 				if event.type == evdev.ecodes.EV_KEY:
 					if event.code in specialCodes:
-						if event.value == 0:
-							com = specialCodes[event.code]
-							if com[0] == 'target':
-								target = com[1]
-								if target == 'z':
-									handler = localtype
-								else:
-									handler = sendItem
-							if com[0] == 'scrollToggle':
-								if mousehandler == scrollFunc:
-									mousehandler = sendItem
-								else:
-									mousehandler = scrollFunc
-						continue
-					await handler(event.type, event.value, event.code, qoo)
+						if event.value == 1: continue
+						com = specialCodes[event.code]
+						if com[0] == 'target':
+							target = com[1]
+							if target == 'local':
+								handler = localtype
+							else:
+								handler = sendItem
+						if com[0] == 'scrollToggle':
+							if mousehandler == scrollFunc:
+								mousehandler = sendItem
+							else:
+								mousehandler = scrollFunc
+					else:
+						await handler(event.type, event.value, event.code, qoo)
 				elif event.type == evdev.ecodes.EV_REL:
-					# await handler(event.type, event.value, event.code, qoo)
 					await mousehandler(event.type, event.value, event.code, qoo)
+
 
 async def main():
 	# Set up config
-	paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/keeb/Config.ini']
+	paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/Config.ini','/home/pxp/keeb/Config.ini']
 	for path in paths:
 		if os.path.exists(path):
 			cfi = config.read(path)

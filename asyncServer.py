@@ -58,7 +58,7 @@ async def localtype(etype, value, code, qoo):
 		return 
 
 
-handler = sendItem  # or localtype, for keyboard events
+handler = localtype  # sendItem or localtype, for keyboard events
 
 
 async def scrollFunc(etype, value, code, qoo):
@@ -92,7 +92,7 @@ async def scrollFunc(etype, value, code, qoo):
 		return
 
 
-mousehandler = scrollFunc  # or sendItem, for mouse events
+mousehandler = scrollFunc  # scrollFunc or sendItem, for mouse events
 
 
 async def getKeys(qoo, device):
@@ -103,7 +103,7 @@ async def getKeys(qoo, device):
 	
 	specialCodes = {}
 	specialCodes[184] = ('target','x')
-	specialCodes[185] = ('scrollToggle',0)
+	specialCodes[185] = ('target','y')
 	specialCodes[186] = ('target','local')
 	specialCodes[276] = ('scrollToggle',0)
 

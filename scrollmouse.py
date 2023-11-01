@@ -6,143 +6,22 @@ import zmq.asyncio
 import configparser
 import os
 
-
-"""Global Variables"""
-config = configparser.ConfigParser()
-userInput = UInput()
-mouseInput = UInput({
-	e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE, e.BTN_SIDE, e.BTN_EXTRA], 
-	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL], })
-msv = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
-target = 'x'
-vScroll = 0.0  # for mouse wheel
-hScroll = 0.0  # for mouse wheel
+from asyncServer import *
 
 
-async def sendthings(qoo):
-	"""Sends events to the clients"""
-	global target
-	context = zmq.asyncio.Context()
-	socket = context.socket(zmq.PUB)
-	socket.bind("tcp://*:64023")
-	while True:
-		etype, value, code = await qoo.get()
-		await socket.send_string(target, zmq.SNDMORE)
-		await socket.send_pyobj((etype, value, code))
-
-
-async def keepAlive(qoo):
-	"""keep the clients responsive"""
-	while True:
-		await qoo.put((23, 0, 0))
-		await asyncio.sleep(.01)
-
-
-async def sendItem(etype, value, code, qoo):
-	await qoo.put((etype, value, code))
-	
-
-async def localtype(etype, value, code, qoo):
-	if etype == e.EV_KEY:
-		if code >= 272 and code <= 276:
-			mouseInput.write(e.EV_MSC, 4, msv[code])
-			mouseInput.write(etype, code, value)
-			mouseInput.syn()
-			return
-		userInput.write(etype, code, value)
-		userInput.syn()
-	elif etype == e.EV_REL:
-		mouseInput.write(etype, code, value)
-		mouseInput.syn()
-	elif etype == 23:
-		return 
-
-
-
-
-async def scrollFunc(etype, value, code, qoo):
-	"""translates mouse translation to mouse wheel events, for custom scroll wheel"""
-	global vScroll
-	global hScroll
-	if code==8:
-		if value > 0:
-			await localtype(e.EV_KEY, 1, 115, qoo)
-			await localtype(e.EV_KEY, 0, 115, qoo)
-			return
-		elif value < 0:
-			await localtype(e.EV_KEY, 1, 114, qoo)
-			await localtype(e.EV_KEY, 0, 114, qoo)
-			return
-	if code == 1:
-		code = e.REL_WHEEL
-		vScroll += float(value*0.1)
-		value = int(vScroll)
-		vScroll -= float(value)
-		value = value * -1
-		await localtype(etype, value, code, qoo)
-		return
-	if code == 0:
-		code = e.REL_HWHEEL
-		hScroll += float(value*0.075)
-		value = int(hScroll)
-		hScroll -= float(value)
-		# value = value * -1
-		await localtype(etype, value, code, qoo)
-		return
-
-
-handler = localtype
-mousehandler = scrollFunc
-
-
-async def getKeys(qoo, device):
-	"""Gets key events from the keyboard and puts them in qoo"""
-	global target
-	global handler
-	global mousehandler
-	
-	specialCodes = {}
-	# specialCodes[184] = ('target','x')
-	# specialCodes[185] = ('target','y')
-	# specialCodes[186] = ('target','z')
-	specialCodes[276] = ('scrollToggle',0)
-
-	with device.grab_context():
-		while True:
-			async for event in device.async_read_loop():
-				if event.type == evdev.ecodes.EV_KEY:
-					if event.code in specialCodes:
-						if event.value == 0:
-							com = specialCodes[event.code]
-							if com[0] == 'target':
-								target = com[1]
-								if target == 'z':
-									handler = localtype
-								else:
-									handler = sendItem
-							if com[0] == 'scrollToggle':
-								if mousehandler == scrollFunc:
-									mousehandler = localtype
-								else:
-									mousehandler = scrollFunc
-						continue
-					await handler(event.type, event.value, event.code, qoo)
-				elif event.type == evdev.ecodes.EV_REL:
-					# await handler(event.type, event.value, event.code, qoo)
-					await mousehandler(event.type, event.value, event.code, qoo)
-
-async def main():
+async def mousemain():
 	# Set up config
 	paths = ['/home/pxp/Documents/mouse.ini','/home/pxp/Documents/code/keeb/mouse.ini','/home/pxp/keeb/mouse.ini']
 	for path in paths:
 		if os.path.exists(path):
 			cfi = config.read(path)
+			print('Config file : ', path)
 			print(cfi)
 			print(config['DEFAULT']['serverip'])
 			break
 		else:
-			print("Config file not found at " + path)
 			continue
+
 
 	await asyncio.sleep(1) # make sure keys are not pressed when devices are captured
 	qoo = asyncio.Queue()
@@ -158,9 +37,15 @@ async def main():
 				task = asyncio.create_task(getKeys(qoo, device))
 				tasks.append(task)
 
+	global target
+	global handler
+	target = 'local'
+	handler = localtype
+
 	await asyncio.gather(*tasks)
 	# await asyncio.gather(*tasks, sendthings(qoo), keepAlive(qoo))
 
+
 if __name__ == '__main__':
-	asyncio.run(main())
+	asyncio.run(mousemain())
 

@@ -12,11 +12,25 @@ config = configparser.ConfigParser()
 userInput = UInput()
 mouseInput = UInput({
 	e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE, e.BTN_SIDE, e.BTN_EXTRA], 
-	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL], })
-msv = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
-target = 'x'
+	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL, e.REL_HWHEEL], })
+
+mouseKeyValues = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
+target = 'local'
 vScroll = 0.0  # for mouse wheel
 hScroll = 0.0  # for mouse wheel
+
+
+def setConfig(paths):
+	global config
+	for path in paths:
+		if os.path.exists(path):
+			cfi = config.read(path)
+			print('Config file : ', path)
+			print(cfi)
+			print(config['DEFAULT']['serverip'])
+			return
+		else:
+			continue
 
 
 async def sendthings(qoo):
@@ -44,11 +58,12 @@ async def sendItem(etype, value, code, qoo):
 
 async def localtype(etype, value, code, qoo):
 	if etype == e.EV_KEY:
-		if code >= 272 and code <= 276:
-			mouseInput.write(e.EV_MSC, 4, msv[code])
-			mouseInput.write(etype, code, value)
-			mouseInput.syn()
-			return
+		if code >= 272:
+			if code <= 276:
+				mouseInput.write(e.EV_MSC, 4, mouseKeyValues[code])
+				mouseInput.write(etype, code, value)
+				mouseInput.syn()
+				return
 		userInput.write(etype, code, value)
 		userInput.syn()
 	elif etype == e.EV_REL:
@@ -134,15 +149,7 @@ async def getKeys(qoo, device):
 async def main():
 	# Set up config
 	paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/Config.ini','/home/pxp/keeb/Config.ini']
-	for path in paths:
-		if os.path.exists(path):
-			cfi = config.read(path)
-			print('Config file : ', path)
-			print(cfi)
-			print(config['DEFAULT']['serverip'])
-			break
-		else:
-			continue
+	setConfig(paths)
 
 	await asyncio.sleep(1) # make sure keys are not pressed when devices are captured
 	qoo = asyncio.Queue()

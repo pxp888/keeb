@@ -58,12 +58,11 @@ async def sendItem(etype, value, code, qoo):
 
 async def localtype(etype, value, code, qoo):
 	if etype == e.EV_KEY:
-		if code >= 272:
-			if code <= 276:
-				mouseInput.write(e.EV_MSC, 4, mouseKeyValues[code])
-				mouseInput.write(etype, code, value)
-				mouseInput.syn()
-				return
+		if code in mouseKeyValues:
+			mouseInput.write(e.EV_MSC, 4, mouseKeyValues[code])
+			mouseInput.write(etype, code, value)
+			mouseInput.syn()
+			return
 		userInput.write(etype, code, value)
 		userInput.syn()
 	elif etype == e.EV_REL:

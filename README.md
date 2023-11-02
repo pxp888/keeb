@@ -1,4 +1,5 @@
 # keeb
+
 keyboard and mouse sharing client and server
 
 These scripts redirect keyboard and mouse inputs from a server machine to client machines.  
@@ -9,7 +10,7 @@ This is very similar to [synergy](https://symless.com/synergy), although it enab
 
 ## Usage
 
-The primary use case for this is to use a raspberry pi "cyberdeck" as a keyboard for a PC.  This would offer many possibilities for automation and customization.  
+The primary use case for this is to use a raspberry pi "cyberdeck" as a keyboard for a PC.  This would also offer many possibilities for automation and customization.  
 
 ## Features
 
@@ -20,21 +21,22 @@ The primary use case for this is to use a raspberry pi "cyberdeck" as a keyboard
 - Scroll mode can be local with __scrollmouse.py__
 
 
+## Potential features
+
+- on the fly macros
+- keyboard mapping (remap keys on the fly)
+- fuzzy logic autocomplete for all apps
+    - python's fuzzywuzzy library would be perfect for this. 
+
+
 ## Requirements
 
 
 |Linux Server|Linux Client|Windows Client|
 |-|-|-|
 |python3|python3|python3|
-|python3-evdev|python3-evdev|pywin32|
+|evdev|evdev|pywin32|
 |pyzmq|pyzmq|pyzmq|
-
-
-## Potential features
-
-- on the fly macros
-- fuzzy logic autocomplete 
-    - python's fuzzywuzzy library would be perfect for this. 
 
 
 ### __asyncServer.py__
@@ -51,6 +53,7 @@ ka("keepalive()")
 si("sendItem()")
 st("sendthings()")
 lt("localtype()")
+mf("scrollFunc()")
 
 ui([virtual keyboard])
 mi([virtual Mouse])
@@ -63,9 +66,10 @@ subgraph getKeys
 end
 
 ka --> st
-getKeys --> si & lt
+getKeys --> si & lt & mf
 si --> st
 lt --> ui & mi
+mf --> si & lt
 ```
 This runs on the machine that is sharing inputs.  It captures the keyboard and mouse inputs and sends them either to the client machines, or to the local machine.
 

@@ -1,4 +1,3 @@
-import multiprocessing as mp
 import evdev
 from evdev import UInput, AbsInfo, ecodes as e
 import asyncio

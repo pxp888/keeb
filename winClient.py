@@ -9,7 +9,19 @@ from asyncio import WindowsSelectorEventLoopPolicy
 asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
 
 config = configparser.ConfigParser()
-config.read(['C:\\Users\\pxper\\Documents\\Config.ini','C:\\Users\\pxper\\Documents\\code\\keeb\\Config.ini'])
+
+
+def setConfig(paths):
+	global config
+	for path in paths:
+		if os.path.exists(path):
+			cfi = config.read(path)
+			print('Config file : ', path)
+			print(cfi)
+			print(config['DEFAULT']['serverip'])
+			return
+		else:
+			continue
 
 
 async def recvthings(qin):
@@ -74,5 +86,7 @@ async def main():
 
 
 if __name__ == '__main__':
+	paths = ['C:\\Users\\pxper\\Documents\\Config.ini','C:\\Users\\pxper\\Documents\\code\\keeb\\Config.ini']
+	setConfig(paths)
 	asyncio.run(main())
 

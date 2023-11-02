@@ -3,6 +3,10 @@ import asyncio
 import zmq.asyncio
 import configparser
 import os 
+import logging 
+
+
+logging.basicConfig(filename='/home/pxp/Documents/asyncClient.log', level=logging.DEBUG, format='%(levelname)s - %(asctime)s  >  %(message)s')
 
 
 """Global Variables"""
@@ -19,12 +23,14 @@ def setConfig(paths):
 	for path in paths:
 		if os.path.exists(path):
 			cfi = config.read(path)
-			print('Config file : ', path)
-			print(cfi)
-			print(config['DEFAULT']['serverip'])
-			return
+			logging.log(logging.INFO, 'Config file : ' + path)
+			logging.log(logging.INFO, cfi)
+			logging.log(logging.INFO, config['DEFAULT']['serverip'])
+			return 0
 		else:
 			continue
+	logging.log(logging.ERROR, 'No config file found')
+	return 1
 
 
 async def recvthings(qin):

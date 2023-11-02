@@ -4,6 +4,10 @@ import asyncio
 import zmq.asyncio
 import configparser
 import os
+import logging 
+
+
+logging.basicConfig(filename='/home/pxp/Documents/asyncServer.log', encoding='utf-8', level=logging.INFO, format='%(levelname)s - %(asctime)s  >  %(message)s')
 
 
 """Global Variables"""
@@ -24,12 +28,14 @@ def setConfig(paths):
 	for path in paths:
 		if os.path.exists(path):
 			cfi = config.read(path)
-			print('Config file : ', path)
-			print(cfi)
-			print(config['DEFAULT']['serverip'])
-			return
+			logging.log(logging.INFO, 'Config file : ' + path)
+			logging.log(logging.INFO, cfi)
+			logging.log(logging.INFO, config['DEFAULT']['serverip'])
+			return 0
 		else:
 			continue
+	logging.log(logging.ERROR, 'No config file found')
+	return 1
 
 
 async def sendthings(qoo):
@@ -159,7 +165,7 @@ async def main():
 	for device in devices:
 		for t in targetDevices:
 			if t in device.name:
-				print('Capturing : ', device.name)
+				logging.log(logging.INFO, 'Capturing : ' + device.name)
 				task = asyncio.create_task(getKeys(qoo, device))
 				tasks.append(task)
 

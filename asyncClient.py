@@ -11,7 +11,8 @@ logging.basicConfig(filename='/home/pxp/Documents/asyncClient.log', level=loggin
 
 """Global Variables"""
 config = configparser.ConfigParser()
-userInput = UInput()
+
+userInput = UInput({e.EV_KEY: [i for i in range(246)[1:]] })
 mouseInput = UInput({
 	e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE, e.BTN_SIDE, e.BTN_EXTRA], 
 	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL, e.REL_HWHEEL], })

@@ -1,0 +1,11 @@
+[Unit]
+Description=add scroll mode to mouse
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sudo /home/pxp/anaconda3/envs/k2/bin/python3 /home/pxp/Documents/code/keeb/scrollmouse.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -7,7 +7,7 @@ import os
 import logging 
 
 
-logging.basicConfig(filename='/home/pxp/Documents/asyncServer.log', encoding='utf-8', level=logging.INFO, format='%(levelname)s - %(asctime)s  >  %(message)s')
+logging.basicConfig(filename='/home/pxperrine/Documents/asyncServer.log', encoding='utf-8', level=logging.INFO, format='%(levelname)s - %(asctime)s  >  %(message)s')
 
 
 """Global Variables"""
@@ -152,7 +152,7 @@ async def getKeys(qoo, device):
 
 async def main():
 	# Set up config
-	paths = ['/home/pxp/Documents/keeb.ini','/home/pxp/Documents/code/keeb/Config.ini','/home/pxp/Config.ini','/home/pxp/keeb/Config.ini']
+	paths = ['/home/pxperrine/Documents/keeb.ini','/home/pxperrine/Documents/code/keeb/Config.ini','/home/pxperrine/Config.ini','/home/pxperrine/keeb/Config.ini']
 	setConfig(paths)
 
 	await asyncio.sleep(1) # make sure keys are not pressed when devices are captured

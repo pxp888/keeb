@@ -11,7 +11,7 @@ from asyncServer import *
 
 async def mousemain():
 	# Set up config
-	paths = ['/home/pxp/Documents/mouse.ini','/home/pxp/Documents/code/keeb/mouse.ini','/home/pxp/keeb/mouse.ini']
+	paths = ['/home/pxperrine/Documents/mouse.ini','/home/pxperrine/Documents/code/keeb/mouse.ini','/home/pxperrine/keeb/mouse.ini']
 	setConfig(paths)
 
 	await asyncio.sleep(1) # make sure keys are not pressed when devices are captured

@@ -1,0 +1,12 @@
+[Unit]
+Description=Scroll Mouse Setup Script
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/home/pxp/miniconda3/envs/k2/bin/python /home/pxp/Documents/code/keeb/scrollmouse.py
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target

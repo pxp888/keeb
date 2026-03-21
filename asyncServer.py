@@ -111,10 +111,23 @@ async def scrollFunc(etype, value, code, qoo):
 		return
 
 
+async def rapooScrollFunc(etype, value, code, qoo):
+	"""translates mouse translation to mouse wheel events, only vertical, for RAPOO mouse"""
+	global vScroll
+	if code == 1:
+		code = e.REL_WHEEL
+		vScroll += float(value*0.015)
+		value = int(vScroll)
+		vScroll -= float(value)
+		value = value * -1
+		await handler(etype, value, code, qoo)
+	return
+
+
 mousehandler = scrollFunc  # scrollFunc or sendItem, for mouse events
 
 
-async def getKeys(qoo, device):
+async def getKeys(qoo, device, fixed_mousehandler=None):
 	"""Gets key events from the keyboard and puts them in qoo"""
 	global target
 	global handler
@@ -139,7 +152,7 @@ async def getKeys(qoo, device):
 								handler = localtype
 							else:
 								handler = sendItem
-						elif com[0] == 'scrollToggle':
+						elif com[0] == 'scrollToggle' and fixed_mousehandler is None:
 							if mousehandler == scrollFunc:
 								mousehandler = handler
 							else:
@@ -147,7 +160,8 @@ async def getKeys(qoo, device):
 					else:
 						await handler(event.type, event.value, event.code, qoo)
 				elif event.type == evdev.ecodes.EV_REL:
-					await mousehandler(event.type, event.value, event.code, qoo)
+					mh = fixed_mousehandler if fixed_mousehandler else mousehandler
+					await mh(event.type, event.value, event.code, qoo)
 
 
 async def main():

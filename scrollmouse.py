@@ -25,7 +25,10 @@ async def mousemain():
 		for t in targetDevices:
 			if t in device.name:
 				print('Capturing : ', device.name)
-				task = asyncio.create_task(getKeys(qoo, device))
+				if 'RAPOO' in device.name:
+					task = asyncio.create_task(getKeys(qoo, device, fixed_mousehandler=rapooScrollFunc))
+				else:
+					task = asyncio.create_task(getKeys(qoo, device))
 				tasks.append(task)
 
 	global target

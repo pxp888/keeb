@@ -116,10 +116,10 @@ async def rapooScrollFunc(etype, value, code, qoo):
 	global vScroll
 	if code == 1:
 		code = e.REL_WHEEL
-		vScroll += float(value*0.015)
+		vScroll += float(value*0.01)
 		value = int(vScroll)
 		vScroll -= float(value)
-		value = value * -1
+		# value = value * -1
 		await handler(etype, value, code, qoo)
 	return
 

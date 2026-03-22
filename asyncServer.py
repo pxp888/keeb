@@ -15,7 +15,7 @@ config = configparser.ConfigParser()
 userInput = UInput()
 mouseInput = UInput({
 	e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE, e.BTN_SIDE, e.BTN_EXTRA], 
-	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL, e.REL_HWHEEL], })
+	e.EV_REL: [e.REL_X, e.REL_Y, e.REL_WHEEL, e.REL_HWHEEL, 11, 12], }) # 11: HI_RES_WHEEL, 12: HI_RES_HWHEEL
 
 mouseKeyValues = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
 target = 'local'
@@ -94,20 +94,28 @@ async def scrollFunc(etype, value, code, qoo):
 			await handler(e.EV_KEY, 0, 114, qoo)
 			return
 	if code == 1:
-		code = e.REL_WHEEL
-		vScroll += float(value*0.1)
-		value = int(vScroll)
-		vScroll -= float(value)
-		value = value * -1
-		await handler(etype, value, code, qoo)
+		# High-resolution scroll (120 units = 1 notch)
+		hiResValue = int(value * -12) # multiplier 12 (120 * 0.1), inverted
+		await handler(etype, hiResValue, 11, qoo)
+
+		# Legacy fallback (standard ticks)
+		vScroll += float(value * 0.1)
+		ticks = int(vScroll)
+		vScroll -= float(ticks)
+		if ticks != 0:
+			await handler(etype, -ticks, e.REL_WHEEL, qoo)
 		return
 	if code == 0:
-		code = e.REL_HWHEEL
-		hScroll += float(value*0.075)
-		value = int(hScroll)
-		hScroll -= float(value)
-		# value = value * -1
-		await handler(etype, value, code, qoo)
+		# Horizontal high-resolution scroll
+		hiResValue = int(value * 9) # multiplier 9 (120 * 0.075)
+		await handler(etype, hiResValue, 12, qoo)
+
+		# Legacy fallback
+		hScroll += float(value * 0.075)
+		ticks = int(hScroll)
+		hScroll -= float(ticks)
+		if ticks != 0:
+			await handler(etype, ticks, e.REL_HWHEEL, qoo)
 		return
 
 
@@ -115,12 +123,16 @@ async def rapooScrollFunc(etype, value, code, qoo):
 	"""translates mouse translation to mouse wheel events, only vertical, for RAPOO mouse"""
 	global vScroll
 	if code == 1:
-		code = e.REL_WHEEL
-		vScroll += float(value*0.01)
-		value = int(vScroll)
-		vScroll -= float(value)
-		# value = value * -1
-		await handler(etype, value, code, qoo)
+		# High-resolution scroll (multiplier 1.2 = 120 * 0.01)
+		hiResValue = int(value * 1.2)
+		await handler(etype, hiResValue, 11, qoo)
+
+		# Legacy fallback
+		vScroll += float(value * 0.01)
+		ticks = int(vScroll)
+		vScroll -= float(ticks)
+		if ticks != 0:
+			await handler(etype, ticks, e.REL_WHEEL, qoo)
 	return
 
 

@@ -11,6 +11,7 @@ The program creates a virtual input device via Linux's `uinput` subsystem and `e
 - **High-Resolution Scrolling**: Supports high-res scroll events for butter-smooth scrolling, with a legacy fallback mechanism.
 - **Background Daemon Mode**: Easily detach and run in the background.
 - **System-Wide Support**: Works regardless of your display server (Wayland, X11, or console) since it operates directly via kernel evdev nodes.
+- **Volume Control**: Use the scroll wheel to control system volume when **scrollmode** is active.
 
 ## Requirements
 

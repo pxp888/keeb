@@ -111,7 +111,11 @@ async def getKeys(device, fixed_mousehandler=None):
 	global mousehandler
 	
 	specialCodes = {}
-	specialCodes[276] = ('scrollToggle', 0) # e.BTN_EXTRA
+	try:
+		toggle_code = int(config['server'].get('ScrollToggleCode', '276'))
+	except Exception:
+		toggle_code = 276
+	specialCodes[toggle_code] = ('scrollToggle', 0) # e.BTN_EXTRA
 
 	with device.grab_context():
 		while True:
@@ -149,7 +153,7 @@ async def mousemain():
 
 	devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
 	for device in devices:
-		print('checking device:', device.name)
+		# print('checking device:', device.name)
 		for t in targetDevices:
 			if t and t in device.name:
 				print('Capturing : ', device.name)

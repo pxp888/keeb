@@ -13,7 +13,7 @@ from textual import work
 
 import scrollmouse
 
-INI_PATH = './mouse.ini'
+INI_PATH = './scrollmode.ini'
 
 class RecordModal(ModalScreen[tuple[int | None, Exception | None]]):
     """Modal to record button press."""
@@ -86,6 +86,10 @@ class DeviceSelectorApp(App):
         padding: 1;
         height: 1fr;
     }
+    #sudo-warning {
+        color: $warning;
+        margin-bottom: 1;
+    }
     OptionList {
         height: 1fr;
         margin-bottom: 1;
@@ -116,6 +120,7 @@ class DeviceSelectorApp(App):
         yield Header()
         with Vertical(id="main-container"):
             yield Label("Please select the target mouse device:")
+            yield Label("⚠️ Note: You may need to run with 'sudo' to detect your mouse.", id="sudo-warning")
             yield OptionList(*[f"{d.name} ({d.path})" for d in self.devices], id="device-list")
             
             with Horizontal(id="controls"):
@@ -181,8 +186,48 @@ def show_device_selector():
     app = DeviceSelectorApp()
     app.run()
 
+def daemonize():
+    """Double-fork to daemonize the process."""
+    try:
+        pid = os.fork()
+        if pid > 0:
+            sys.exit(0)
+    except OSError as e:
+        sys.stderr.write(f"Fork #1 failed: {e}\n")
+        sys.exit(1)
+
+    os.setsid()
+
+    try:
+        pid = os.fork()
+        if pid > 0:
+            sys.exit(0)
+    except OSError as e:
+        sys.stderr.write(f"Fork #2 failed: {e}\n")
+        sys.exit(1)
+
+    sys.stdout.flush()
+    sys.stderr.flush()
+    try:
+        with open('/dev/null', 'r') as f:
+            os.dup2(f.fileno(), sys.stdin.fileno())
+        with open('/dev/null', 'a+') as f:
+            os.dup2(f.fileno(), sys.stdout.fileno())
+            os.dup2(f.fileno(), sys.stderr.fileno())
+    except Exception:
+        pass
+
 def main():
+    run_daemon = False
+    if '-d' in sys.argv:
+        run_daemon = True
+        sys.argv.remove('-d')
+
     if not os.path.exists(INI_PATH):
+        if run_daemon:
+            print(f"Error: '{INI_PATH}' not found. Please run without '-d' first to configure.", file=sys.stderr)
+            sys.exit(1)
+            
         print(f"'{INI_PATH}' not found. Launching device selector...")
         try:
             show_device_selector()
@@ -191,12 +236,18 @@ def main():
             return
 
     if os.path.exists(INI_PATH):
+        if run_daemon:
+            print("Running in background (daemon mode)...")
+            daemonize()
+        else:
+            print(f"Info: You can adjust settings by deleting '{INI_PATH}' and running this again.")
+            
         try:
             asyncio.run(scrollmouse.mousemain())
         except KeyboardInterrupt:
             pass
     else:
-        print("mouse.ini was not created. Exiting.")
+        print("scrollmode.ini was not created. Exiting.")
 
 if __name__ == '__main__':
     main()

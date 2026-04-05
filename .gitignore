@@ -4,7 +4,12 @@ __pycache__/
 .zed/
 .zedworkspace
 
-mouse.ini
+scrollmode.ini
 
 # Rope project caching directory
 .ropeproject/
+
+# PyInstaller
+build/
+dist/
+*.spec

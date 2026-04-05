@@ -4,6 +4,7 @@ import asyncio
 import configparser
 import os
 import sys
+import termios
 
 # Globals
 config = configparser.ConfigParser()
@@ -135,37 +136,57 @@ async def getKeys(device, fixed_mousehandler=None):
 
 
 async def mousemain():
-	# Set up config
-	paths = ['./mouse.ini']
-	setConfig(paths)
-
-	await asyncio.sleep(1) # make sure keys are not pressed when devices are captured
-
-	# Set up devices
-	tasks = []
+	fd = None
+	old_termios = None
 	try:
-		targetDevices = config['server']['DeviceNames'].split('|')
-	except KeyError:
-		print("Config error: ['server']['DeviceNames'] missing.", file=sys.stderr)
-		return
+		if sys.stdin.isatty():
+			fd = sys.stdin.fileno()
+			old_termios = termios.tcgetattr(fd)
+			new_termios = termios.tcgetattr(fd)
+			new_termios[3] = new_termios[3] & ~termios.ECHO
+			termios.tcsetattr(fd, termios.TCSADRAIN, new_termios)
+	except Exception:
+		pass
 
-	devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
-	for device in devices:
-		# print('checking device:', device.name)
-		for t in targetDevices:
-			if t and t in device.name:
-				print('Capturing : ', device.name)
-				if 'RAPOO' in device.name:
-					task = asyncio.create_task(getKeys(device, fixed_mousehandler=rapooScrollFunc))
-				else:
-					task = asyncio.create_task(getKeys(device))
-				tasks.append(task)
+	try:
+		# Set up config
+		paths = ['./scrollmode.ini']
+		setConfig(paths)
 
-	if not tasks:
-		print("No devices matched the configuration.")
-		return
+		await asyncio.sleep(1) # make sure keys are not pressed when devices are captured
 
-	await asyncio.gather(*tasks)
+		# Set up devices
+		tasks = []
+		try:
+			targetDevices = config['server']['DeviceNames'].split('|')
+		except KeyError:
+			print("Config error: ['server']['DeviceNames'] missing.", file=sys.stderr)
+			return
+
+		devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
+		for device in devices:
+			# print('checking device:', device.name)
+			for t in targetDevices:
+				if t and t in device.name:
+					print('Capturing : ', device.name)
+					if 'RAPOO' in device.name:
+						task = asyncio.create_task(getKeys(device, fixed_mousehandler=rapooScrollFunc))
+					else:
+						task = asyncio.create_task(getKeys(device))
+					tasks.append(task)
+
+		if not tasks:
+			print("No devices matched the configuration.")
+			return
+
+		await asyncio.gather(*tasks)
+	finally:
+		if fd is not None and old_termios is not None:
+			try:
+				termios.tcsetattr(fd, termios.TCSADRAIN, old_termios)
+			except Exception:
+				pass
+
 
 
 if __name__ == '__main__':

@@ -1,0 +1,17 @@
+altgraph==0.17.5
+evdev==1.9.2
+linkify-it-py==2.1.0
+markdown-it-py==4.0.0
+mdit-py-plugins==0.5.0
+mdurl==0.1.2
+packaging==26.0
+platformdirs==4.9.4
+Pygments==2.20.0
+pyinstaller==6.19.0
+pyinstaller-hooks-contrib==2026.4
+pyzmq==27.1.0
+rich==14.3.3
+textual==8.2.2
+typing_extensions==4.15.0
+uc-micro-py==2.0.0
+zmq==0.0.0

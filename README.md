@@ -85,3 +85,11 @@ To launch the setup wizard again to change your device or trigger key, simply de
 rm scrollmode.ini
 sudo python scrollmode.py
 ```
+
+## Building the Executable
+
+If you want to create your own standalone executable from the source, you can use PyInstaller:
+
+```bash
+pyinstaller --onefile --name "scrollmode" scrollmode.py
+```

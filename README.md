@@ -4,6 +4,10 @@ ScrollMode is a Linux utility that upgrades your mouse by adding a custom "scrol
 
 The program creates a virtual input device via Linux's `uinput` subsystem and `evdev` to intercept raw mouse inputs, intelligently route them based on the current mode, and emit them as standard OS-level events.
 
+![demo video](demo1.mp4)
+
+![demo video](demo2.mp4)
+
 ## Features
 
 - **Custom Scroll Trigger**: Assign any mouse button to activate scroll mode.

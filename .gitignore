@@ -5,3 +5,6 @@ __pycache__/
 .zedworkspace
 
 mouse.ini
+
+# Rope project caching directory
+.ropeproject/

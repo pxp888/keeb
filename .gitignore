@@ -3,3 +3,5 @@ __pycache__/
 # Zed‑specific local data
 .zed/
 .zedworkspace
+
+mouse.ini

@@ -1,124 +1,85 @@
-# keeb
+# ScrollMode (Keeb)
 
-keyboard and mouse sharing client and server
+ScrollMode is a Linux utility that upgrades your mouse by adding a custom "scroll mode" feature. Instead of turning a mechanical scroll wheel, you can toggle a designated mouse button (e.g., a side thumb button), and any physical device movement will seamlessly translate into smooth vertical and horizontal scroll wheel events.
 
-These scripts redirect keyboard and mouse inputs from a server machine to client machines.  
-
-Target machines can be switched on the fly with a hotkey.  
-
-This is very similar to [synergy](https://symless.com/synergy), although it enables altering or automating the behavior of the keyboard and mouse inputs.
-
-## Usage
-
-The primary use case for this is to use a raspberry pi "cyberdeck" as a keyboard for a PC.  This would also offer many possibilities for automation and customization.  
+The program creates a virtual input device via Linux's `uinput` subsystem and `evdev` to intercept raw mouse inputs, intelligently route them based on the current mode, and emit them as standard OS-level events.
 
 ## Features
 
-- Keyboard and mouse sharing
-- Switch target machines on the fly
-- Scroll mode for mouse inputs (scrolling is sent to the target machine)
-- Volume control with mouse wheel in scroll mode
-- Scroll mode can be local with __scrollmouse.py__
-
-
-## Potential features
-
-- on the fly macros
-- keyboard mapping (remap keys on the fly)
-- fuzzy logic autocomplete for all apps
-    - python's fuzzywuzzy library would be perfect for this. 
-
+- **Custom Scroll Trigger**: Assign any mouse button to activate scroll mode.
+- **Interactive Configuration TUI**: Includes a Textual-based UI to easily pick your mouse device and record your chosen trigger button.
+- **High-Resolution Scrolling**: Supports high-res scroll events for butter-smooth scrolling, with a legacy fallback mechanism.
+- **Multi-Device Support**: Capable of supporting generic input mice as well as custom logic (such as for RAPOO mice).
+- **Background Daemon Mode**: Easily detach and run in the background.
+- **System-Wide Support**: Works regardless of your display server (Wayland, X11, or console) since it operates directly via kernel evdev nodes.
 
 ## Requirements
 
+- Linux operating system
+- Python 3.7+
+- Dependencies: `evdev`, `textual`
 
-|Linux Server|Linux Client|Windows Client|
-|-|-|-|
-|python3|python3|python3|
-|evdev|evdev|pywin32|
-|pyzmq|pyzmq|pyzmq|
+*Note: Since the program grabs and emits raw device events directly through `/dev/input/*` devices, it typically requires `root` privileges (or membership in the `input` group).*
+
+## Quick Start (Pre-compiled Executable)
+
+For most users, the easiest way to use ScrollMode without installing Python or any dependencies is to run the standalone executable.
+
+1. Navigate to the `executable/` directory and download the compiled executable.
+2. Make sure it has execute permissions (`chmod +x scrollmode`).
+3. Run the executable with `root` privileges (required to interact with input devices):
+   ```bash
+   sudo ./scrollmode
+   ```
+4. If you want it to run silently in the background as a daemon, append the `-d` flag:
+   ```bash
+   sudo ./scrollmode -d
+   ```
+
+*Note: The first time you launch the executable, it will open an interactive configuration tool to help you select your mouse and trigger button.*
 
 
-### __asyncServer.py__
+## Running from Source (Python)
 
-```mermaid
-graph LR
+If you prefer to run the raw Python scripts instead, you will need to set up the environment.
 
-gk1("getkeys()")
-gk2("getkeys()")
-gk3("getkeys()")
+1. Install the Python dependencies (via pip, a virtual environment, or your package manager):
+   ```bash
+   pip install evdev textual
+   ```
 
-ka("keepalive()")
+2. Launch the script (with `sudo` if necessary) to begin the first-time setup:
+   ```bash
+   sudo python scrollmode.py
+   ```
 
-si("sendItem()")
-st("sendthings()")
-lt("localtype()")
-mf("scrollFunc()")
+3. **Configuration UI**: Because no `scrollmode.ini` file exists yet, a Terminal UI will appear.
+   - Use the arrow keys to select your mouse from the list of available input devices.
+   - Focus "Record Trigger" and press it, then click the mouse button you want to use as your scroll toggle lock.
+   - Select "Save & Exit" to save your choices locally.
 
-ui([virtual keyboard])
-mi([virtual Mouse])
+## Usage
 
-subgraph getKeys
-    direction LR
-    gk1
-    gk2
-    gk3
-end
+Once `scrollmode.ini` is generated, you can launch the application normally:
 
-ka --> st
-getKeys --> si & lt & mf
-si --> st
-lt --> ui & mi
-mf --> si & lt
+```bash
+sudo python scrollmode.py
 ```
-This runs on the machine that is sharing inputs.  It captures the keyboard and mouse inputs and sends them either to the client machines, or to the local machine.
+The script will actively capture your mouse. When the toggle button is pressed, dragging the mouse physically across your desk will send `REL_WHEEL` and `REL_HWHEEL` scroll inputs instead of moving the cursor.
 
+### Daemon Mode (Background)
 
-### __asyncClient.py__
+If you'd like to use this seamlessly without an open terminal, you can launch the tool as a background daemon:
 
-```mermaid
-graph LR
-
-rcv("recvthings()")
-ds("doStuff()")
-ui([virtual keyboard])
-mi([virtual Mouse])
-
-rcv --> ds --> ui & mi
-
+```bash
+sudo python scrollmode.py -d
 ```
-This runs on the target machines. It receives the inputs from the server and sends them to the virtual keyboard and mouse.
 
-### __winClient.py__
-Identical to asyncClient.py, but uses pywin32 instead of evdev.  This is for windows machines.
+### Re-configuring
 
-### scrollmouse.py
-This provides __"scroll mode"__ functionality, but on a local computer.  
+To launch the setup wizard again to change your device or trigger key, simply delete the generated configuration file and run the script again:
 
-
-
-## Message Event Types
-
-While it would be trivial to support all messege types, as of this writing only events to handle keyboard and mouse inputs are used.  
-
-In addition to the standard evdev event types a keepAlive type is used to maintain a responsive connection.  This event type is not part of the evdev framework.  It is sent multiple times a second to maintain a responsive connection.  Without this constant stream the latency becomes highly variable.  
-
-
-
-|Type|ENUM|Description|
-|-|-|-|
-|0|EV_SYN| This event type is used to synchronize and separate events. It doesn't represent a specific input event but is used to separate different events and indicate the end of a sequence of events.
-|1| EV_KEY| This event type represents keyboard events, including key presses and releases. Each key press or release event has an associated keycode.
-|2| EV_REL| This event type represents relative axis events. These events are generated by devices like mice and trackpads to indicate relative movement along different axes (X, Y, etc.).
-|3| EV_ABS| This event type represents absolute axis events. Devices like touchscreens generate absolute position data, which is represented through this event type. It includes events for X and Y coordinates, pressure, and other absolute input values.
-|4|EV_MSC| Miscellaneous input events. These are used for events that don't fit into other categories. Examples include events indicating device status changes.
-|5| EV_SW| Switch events. These events indicate the state of switches on a device, such as the lid switch on a laptop.
-|6| EV_LED| LED (Light Emitting Diode) events. These events are used to control the state of LEDs on input devices like keyboards.
-|7| EV_SND| Sound events. These events are used for input related to sound, although they are not commonly used for standard input devices.
-|8| EV_REP| Repeat events. These events are used to indicate that a key is being held down and is automatically repeating.
-|9| EV_FF| Force Feedback events. These events are used for force feedback devices like rumble pads and force feedback joysticks.
-|23|_keepAlive_|_These are not part of the __evdev__ framework.  These are sent multiple times a second to maintain a responsive connection._
-
-
-
-
+```bash
+rm scrollmode.ini
+sudo python scrollmode.py
+```

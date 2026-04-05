@@ -101,9 +101,7 @@ async def rapooScrollFunc(etype, value, code):
 			await handler(etype, ticks, e.REL_WHEEL)
 	return
 
-
-mousehandler = scrollFunc
-
+mousehandler = handler
 
 async def getKeys(device, fixed_mousehandler=None):
 	"""Gets key events from the mouse and handles them"""

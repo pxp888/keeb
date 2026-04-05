@@ -9,6 +9,7 @@ from textual.containers import Vertical, Horizontal
 from textual.widgets import Header, Footer, OptionList, Label, Button
 from textual.screen import ModalScreen
 from textual.binding import Binding
+from textual import work
 
 import scrollmouse
 
@@ -127,6 +128,7 @@ class DeviceSelectorApp(App):
                 
         yield Footer()
 
+    @work
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-record":
             list_widget = self.query_one("#device-list", OptionList)

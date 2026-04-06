@@ -53,7 +53,7 @@ If you prefer to run the raw Python scripts instead, you will need to set up the
    ```
 
 2. Launch the script (with `sudo` if necessary) to begin the first-time setup:
-
+         
    ```bash
    sudo python scrollmode.py
    ```

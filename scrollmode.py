@@ -3,6 +3,7 @@ import sys
 import asyncio
 import configparser
 import evdev
+import subprocess
 
 from textual.app import App, ComposeResult
 from textual.containers import Vertical, Horizontal
@@ -108,14 +109,47 @@ class DeviceSelectorApp(App):
     
     BINDINGS = [
         Binding("q", "quit", "Quit", show=True),
-        Binding("enter", "submit", "Save & Exit", show=True),
     ]
 
     def __init__(self):
         super().__init__()
         self.devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
         self.trigger_code = 276
-        
+        self.sensitivity = "100"
+        self.default_idx = None
+        self.service_process = None
+
+        if os.path.exists(INI_PATH):
+            config = configparser.ConfigParser()
+            config.read(INI_PATH)
+            try:
+                selected_name = config['server'].get('DeviceNames', '')
+                for i, d in enumerate(self.devices):
+                    if selected_name and selected_name in d.name:
+                        self.default_idx = i
+                        break
+            except Exception: pass
+            
+            try:
+                self.trigger_code = int(config['server'].get('ScrollToggleCode', '276'))
+            except Exception: pass
+            
+            try:
+                self.sensitivity = config['server'].get('Sensitivity', '100')
+            except Exception: pass
+
+    def on_mount(self) -> None:
+        if self.default_idx is not None:
+            self.query_one("#device-list", OptionList).highlighted = self.default_idx
+
+    def on_unmount(self) -> None:
+        if self.service_process is not None:
+            try:
+                self.service_process.terminate()
+            except Exception:
+                pass
+            self.service_process = None
+
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="main-container"):
@@ -129,10 +163,11 @@ class DeviceSelectorApp(App):
                 
             with Horizontal(id="sensitivity-controls"):
                 yield Label("Sensitivity (%):", id="sensitivity-label")
-                yield Input(value="100", id="sensitivity-input")
+                yield Input(value=self.sensitivity, id="sensitivity-input")
                 
             with Horizontal():
-                yield Button("Save & Exit", id="btn-save", variant="success")
+                yield Button("Start", id="btn-save", variant="success")
+                yield Button("Start Daemon", id="btn-daemon", variant="primary")
                 yield Button("Cancel", id="btn-cancel", variant="error")
                 
         yield Footer()
@@ -159,18 +194,50 @@ class DeviceSelectorApp(App):
                     self.notify(f"Recorded key code {code}")
                     
         elif event.button.id == "btn-save":
-            self.save_and_exit()
-        elif event.button.id == "btn-cancel":
-            self.exit()
+            if self.service_process is None:
+                if self.save_config_only():
+                    if getattr(sys, 'frozen', False):
+                        args = [sys.executable, "--service"]
+                    else:
+                        args = [sys.executable, sys.argv[0], "--service"]
+                    self.service_process = subprocess.Popen(args, stdin=subprocess.DEVNULL)
+                    btn = self.query_one("#btn-save", Button)
+                    btn.label = "Stop"
+                    btn.variant = "warning"
+            else:
+                self.service_process.terminate()
+                self.service_process = None
+                btn = self.query_one("#btn-save", Button)
+                btn.label = "Start"
+                btn.variant = "success"
 
-    def action_submit(self) -> None:
-        self.save_and_exit()
-            
-    def save_and_exit(self):
+        elif event.button.id == "btn-daemon":
+            if self.service_process is not None:
+                self.service_process.terminate()
+                self.service_process = None
+            if self.save_config_only():
+                self.exit(result="daemon")
+
+        elif event.button.id == "btn-cancel":
+            if self.service_process is not None:
+                self.service_process.terminate()
+                self.service_process = None
+            self.exit(result="cancel")
+
+    def action_quit(self) -> None:
+        if self.service_process is not None:
+            try:
+                self.service_process.terminate()
+            except Exception:
+                pass
+            self.service_process = None
+        self.exit(result="cancel")
+
+    def save_config_only(self) -> bool:
         list_widget = self.query_one("#device-list", OptionList)
         if list_widget.highlighted is None:
             self.notify("Please select a device.", severity="warning")
-            return
+            return False
             
         idx = list_widget.highlighted
         selected_name = self.devices[idx].name
@@ -192,11 +259,11 @@ class DeviceSelectorApp(App):
         with open(INI_PATH, 'w') as configfile:
             config.write(configfile)
             
-        self.exit()
+        return True
 
 def show_device_selector():
     app = DeviceSelectorApp()
-    app.run()
+    return app.run()
 
 def daemonize():
     """Double-fork to daemonize the process."""
@@ -230,36 +297,46 @@ def daemonize():
         pass
 
 def main():
+    if '--service' in sys.argv:
+        try:
+            asyncio.run(scrollmouse.mousemain())
+        except KeyboardInterrupt:
+            pass
+        return
+
     run_daemon = False
     if '-d' in sys.argv:
         run_daemon = True
         sys.argv.remove('-d')
 
-    if not os.path.exists(INI_PATH):
-        if run_daemon:
+    if run_daemon:
+        if not os.path.exists(INI_PATH):
             print(f"Error: '{INI_PATH}' not found. Please run without '-d' first to configure.", file=sys.stderr)
             sys.exit(1)
-            
-        print(f"'{INI_PATH}' not found. Launching device selector...")
+        
+        print("Running in background (daemon mode)...")
+        daemonize()
         try:
-            show_device_selector()
-        except Exception as e:
-            print(f"Error launching TUI: {e}", file=sys.stderr)
-            return
+            asyncio.run(scrollmouse.mousemain())
+        except KeyboardInterrupt:
+            pass
+        return
 
-    if os.path.exists(INI_PATH):
-        if run_daemon:
-            print("Running in background (daemon mode)...")
-            daemonize()
-        else:
-            print(f"Info: You can adjust settings by deleting '{INI_PATH}' and running this again.")
-            
+    try:
+        action = show_device_selector()
+    except Exception as e:
+        print(f"Error launching TUI: {e}", file=sys.stderr)
+        return
+
+    if action == "daemon":
+        print("Running in background (daemon mode)...")
+        daemonize()
         try:
             asyncio.run(scrollmouse.mousemain())
         except KeyboardInterrupt:
             pass
     else:
-        print("scrollmode.ini was not created. Exiting.")
+        print("Exited without starting.")
 
 if __name__ == '__main__':
     main()

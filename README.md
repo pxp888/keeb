@@ -9,6 +9,7 @@ The program creates a virtual input device via Linux's `uinput` subsystem and `e
 ![screen1](screen1.png)
 
 windows version:
+
 ![windows screenshot](windows.png)
 
 ## Features
@@ -45,13 +46,11 @@ For most users, the easiest way to use ScrollMode without installing Python or a
 
 _Note: The first time you launch the executable, it will open an interactive configuration tool to help you select your mouse and trigger button._
 
-
 ## Windows
 
-Just run the .exe file.  
+Just run the .exe file.
 
-__Note - if the mouse hook gets 'stuck' press `Ctrl + ALt + Del` and then esc again.  This will drop the background hook.__
-
+**Note - if the mouse hook gets 'stuck' press `Ctrl + ALt + Del` and then esc again. This will drop the background hook.**
 
 ## Running from Source (Python)
 
@@ -64,7 +63,7 @@ If you prefer to run the raw Python scripts instead, you will need to set up the
    ```
 
 2. Launch the script (with `sudo` if necessary) to begin the first-time setup:
-         
+
    ```bash
    sudo python scrollmode.py
    ```
@@ -109,7 +108,7 @@ If you want to create your own standalone executable from the source, you can us
 pyinstaller --onefile --name "scrollmode" scrollmode.py
 ```
 
-or on windows:  
+or on windows:
 
 ```bash
 pyinstaller --noconsole --onefile --uac-admin --name "ScrollMode" "winScrollmode.py"

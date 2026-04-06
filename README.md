@@ -50,7 +50,7 @@ _Note: The first time you launch the executable, it will open an interactive con
 
 Just run the .exe file.
 
-**Note - if the mouse hook gets 'stuck' press `Ctrl + ALt + Del` and then esc again. This will drop the background hook.**
+**_Note - if the mouse hook gets 'stuck' press `Ctrl + ALt + Del` and then esc again. This will drop the background hook._**
 
 ## Running from Source (Python)
 

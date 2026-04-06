@@ -93,7 +93,13 @@ class ScrollController:
         self.hook_thread = None
         self.hook_thread_id = None
         self.scroll_queue = queue.Queue()
-        self.ini_path = './winScrollmode.ini'
+        # Robust path handling for PyInstaller compatibility
+        if getattr(sys, 'frozen', False):
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        self.ini_path = os.path.join(base_dir, 'winScrollmode.ini')
         
         # Internal configuration
         self.toggle_msg = 0x020B

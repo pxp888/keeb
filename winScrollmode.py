@@ -7,6 +7,8 @@ import queue
 import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
+import pystray
+from PIL import Image
 
 # --- Win32 Constants & Types ---
 user32 = ctypes.windll.user32
@@ -95,11 +97,15 @@ class ScrollController:
         self.scroll_queue = queue.Queue()
         # Robust path handling for PyInstaller compatibility
         if getattr(sys, 'frozen', False):
-            base_dir = os.path.dirname(sys.executable)
+            base_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
         else:
             base_dir = os.path.dirname(os.path.abspath(__file__))
         
-        self.ini_path = os.path.join(base_dir, 'winScrollmode.ini')
+        # We look for config as well
+        if getattr(sys, 'frozen', False): # For ini, use executable dir
+            self.ini_path = os.path.join(os.path.dirname(sys.executable), 'winScrollmode.ini')
+        else:
+            self.ini_path = os.path.join(base_dir, 'winScrollmode.ini')
         
         # Internal configuration
         self.toggle_msg = 0x020B
@@ -121,7 +127,14 @@ class ScrollController:
         
         # Start injection thread
         threading.Thread(target=self.scroll_worker, daemon=True).start()
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        
+        # Tray Icon Setup
+        self.icon_path = os.path.join(base_dir, 'windows.png')
+        self.tray_icon = None
+        self.setup_tray() # Always setup, it has a fallback now
+        
+        self.root.protocol("WM_DELETE_WINDOW", self.hide_window)
+        self.root.bind("<Unmap>", self.on_unmap)
 
     def load_config(self):
         if not os.path.exists(self.ini_path): return
@@ -218,10 +231,43 @@ class ScrollController:
     def toggle_engine(self):
         if self.is_active:
             self.stop_hook_thread()
-            self.toggle_btn.config(text="START ENGINE", bg="#7AA2F7")
+            self.root.after(0, lambda: self.toggle_btn.config(text="START ENGINE", bg="#7AA2F7"))
         else:
             self.start_hook_thread()
-            self.toggle_btn.config(text="STOP ENGINE", bg="#F7768E")
+            self.root.after(0, lambda: self.toggle_btn.config(text="STOP ENGINE", bg="#F7768E"))
+
+    def setup_tray(self):
+        try:
+            if os.path.exists(self.icon_path):
+                image = Image.open(self.icon_path)
+            else:
+                # Fallback: Create a small solid color icon if file is missing
+                print(f"[Tray] Warn: windows.png not found at {self.icon_path}. Using fallback icon.")
+                image = Image.new('RGB', (64, 64), color=(122, 162, 247)) # Accent color blue
+                
+            menu = pystray.Menu(
+                pystray.MenuItem("Show Panel", self.show_window, default=True),
+                pystray.MenuItem("Toggle Engine", self.toggle_engine),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Exit Completely", self.on_close)
+            )
+            self.tray_icon = pystray.Icon("winScrollmode", image, "ScrollMode Control Panel", menu)
+            threading.Thread(target=self.tray_icon.run, daemon=True).start()
+        except Exception as e:
+            print(f"[Tray] Critical Error: {e}")
+
+    def show_window(self, icon=None, item=None):
+        self.root.after(0, self.root.deiconify)
+        self.root.after(0, self.root.attributes, "-topmost", True)
+        self.root.after(100, self.root.attributes, "-topmost", False)
+
+    def hide_window(self):
+        self.root.withdraw()
+
+    def on_unmap(self, event):
+        # Triggered on minimize
+        if self.root.state() == 'iconic':
+            self.hide_window()
 
     def start_hook_thread(self):
         if self.hook_thread and self.hook_thread.is_alive(): return
@@ -348,10 +394,13 @@ class ScrollController:
                 user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
                 h_acc -= pulse
 
-    def on_close(self):
+    def on_close(self, icon=None, item=None):
         self.stop_hook_thread()
         self.save_config()
+        if self.tray_icon:
+            self.tray_icon.stop()
         self.root.destroy()
+        sys.exit(0)
 
 if __name__ == "__main__":
     try: ctypes.windll.shcore.SetProcessDpiAwareness(1)

@@ -97,3 +97,9 @@ If you want to create your own standalone executable from the source, you can us
 ```bash
 pyinstaller --onefile --name "scrollmode" scrollmode.py
 ```
+
+or on windows:  
+
+```bash
+pyinstaller --noconsole --onefile --uac-admin --name "ScrollMode" "winScrollmode.py"
+```

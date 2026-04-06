@@ -5,6 +5,7 @@ __pycache__/
 .zedworkspace
 
 scrollmode.ini
+winscrollmode.ini
 
 # Rope project caching directory
 .ropeproject/

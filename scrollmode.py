@@ -6,7 +6,7 @@ import evdev
 
 from textual.app import App, ComposeResult
 from textual.containers import Vertical, Horizontal
-from textual.widgets import Header, Footer, OptionList, Label, Button
+from textual.widgets import Header, Footer, OptionList, Label, Button, Input
 from textual.screen import ModalScreen
 from textual.binding import Binding
 from textual import work
@@ -95,12 +95,12 @@ class DeviceSelectorApp(App):
         margin-bottom: 1;
         border: solid $accent;
     }
-    #controls {
+    #controls, #sensitivity-controls {
         height: 3;
         margin-bottom: 1;
         align-vertical: middle;
     }
-    #trigger-label {
+    #trigger-label, #sensitivity-label {
         padding: 1;
         margin-right: 1;
     }
@@ -126,6 +126,10 @@ class DeviceSelectorApp(App):
             with Horizontal(id="controls"):
                 yield Label(f"Trigger Key Code: {self.trigger_code} (Default: 276)", id="trigger-label")
                 yield Button("Record Trigger", id="btn-record", variant="primary")
+                
+            with Horizontal(id="sensitivity-controls"):
+                yield Label("Sensitivity (%):", id="sensitivity-label")
+                yield Input(value="100", id="sensitivity-input")
                 
             with Horizontal():
                 yield Button("Save & Exit", id="btn-save", variant="success")
@@ -171,10 +175,18 @@ class DeviceSelectorApp(App):
         idx = list_widget.highlighted
         selected_name = self.devices[idx].name
         
+        sensitivity_str = self.query_one("#sensitivity-input", Input).value
+        sensitivity_str = sensitivity_str.replace('%', '').strip()
+        try:
+            float(sensitivity_str)
+        except ValueError:
+            sensitivity_str = "100"
+
         config = configparser.ConfigParser()
         config['server'] = {
             'DeviceNames': selected_name,
-            'ScrollToggleCode': str(self.trigger_code)
+            'ScrollToggleCode': str(self.trigger_code),
+            'Sensitivity': sensitivity_str
         }
         
         with open(INI_PATH, 'w') as configfile:

@@ -17,6 +17,7 @@ mouseInput = UInput({
 mouseKeyValues = {272: 90001, 273: 90002, 274: 90003, 275: 90004, 276: 90005}
 vScroll = 0.0  
 hScroll = 0.0  
+sensitivity = 1.0
 
 
 def setConfig(paths):
@@ -51,6 +52,7 @@ async def scrollFunc(etype, value, code):
 	"""translates mouse translation to mouse wheel events, for custom scroll wheel"""
 	global vScroll
 	global hScroll
+	global sensitivity
 	if code == 8: # REL_WHEEL
 		if value > 0:
 			await handler(e.EV_KEY, 1, e.KEY_VOLUMEUP)
@@ -62,11 +64,11 @@ async def scrollFunc(etype, value, code):
 			return
 	if code == 1: # REL_Y
 		# High-resolution scroll (120 units = 1 notch)
-		hiResValue = int(value * -12) # multiplier 12 (120 * 0.1), inverted
+		hiResValue = int(value * -12 * sensitivity) # multiplier 12 (120 * 0.1), inverted
 		await handler(etype, hiResValue, 11)
 
 		# Legacy fallback (standard ticks)
-		vScroll += float(value * 0.1)
+		vScroll += float(value * 0.1 * sensitivity)
 		ticks = int(vScroll)
 		vScroll -= float(ticks)
 		if ticks != 0:
@@ -74,11 +76,11 @@ async def scrollFunc(etype, value, code):
 		return
 	if code == 0: # REL_X
 		# Horizontal high-resolution scroll
-		hiResValue = int(value * 9) # multiplier 9 (120 * 0.075)
+		hiResValue = int(value * 9 * sensitivity) # multiplier 9 (120 * 0.075)
 		await handler(etype, hiResValue, 12)
 
 		# Legacy fallback
-		hScroll += float(value * 0.075)
+		hScroll += float(value * 0.075 * sensitivity)
 		ticks = int(hScroll)
 		hScroll -= float(ticks)
 		if ticks != 0:
@@ -89,13 +91,14 @@ async def scrollFunc(etype, value, code):
 async def rapooScrollFunc(etype, value, code):
 	"""translates mouse translation to mouse wheel events, only vertical, for RAPOO mouse"""
 	global vScroll
+	global sensitivity
 	if code == 1: # REL_Y
 		# High-resolution scroll (multiplier 1.2 = 120 * 0.01)
-		hiResValue = int(value * 1.2)
+		hiResValue = int(value * 1.2 * sensitivity)
 		await handler(etype, hiResValue, 11)
 
 		# Legacy fallback
-		vScroll += float(value * 0.01)
+		vScroll += float(value * 0.01 * sensitivity)
 		ticks = int(vScroll)
 		vScroll -= float(ticks)
 		if ticks != 0:
@@ -162,6 +165,12 @@ async def mousemain():
 		except KeyError:
 			print("Config error: ['server']['DeviceNames'] missing.", file=sys.stderr)
 			return
+
+		global sensitivity
+		try:
+			sensitivity = float(config['server'].get('Sensitivity', '100')) / 100.0
+		except Exception:
+			sensitivity = 1.0
 
 		devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
 		for device in devices:

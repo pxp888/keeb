@@ -6,6 +6,33 @@ import os
 import sys
 import termios
 
+def get_ini_path():
+	"""Get the path to the configuration file, handling sudo user home and migration."""
+	sudo_user = os.environ.get('SUDO_USER')
+	if sudo_user:
+		try:
+			import pwd
+			home = pwd.getpwnam(sudo_user).pw_dir
+		except (ImportError, KeyError):
+			home = os.path.expanduser('~')
+	else:
+		home = os.path.expanduser('~')
+	
+	new_path = os.path.join(home, '.config/scrollmode/scrollmode.ini')
+	old_path = os.path.abspath('./scrollmode.ini')
+
+	# Handle migration from current folder if the new one doesn't exist
+	if not os.path.exists(new_path) and os.path.exists(old_path):
+		try:
+			os.makedirs(os.path.dirname(new_path), exist_ok=True)
+			import shutil
+			shutil.copy2(old_path, new_path)
+			return new_path
+		except Exception:
+			return old_path
+
+	return new_path
+
 # Globals
 config = configparser.ConfigParser()
 mouseInput = UInput({
@@ -153,7 +180,10 @@ async def mousemain():
 
 	try:
 		# Set up config
-		paths = ['./scrollmode.ini']
+		paths = [
+			get_ini_path(),
+			'./scrollmode.ini'
+		]
 		setConfig(paths)
 
 		await asyncio.sleep(1) # make sure keys are not pressed when devices are captured

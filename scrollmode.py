@@ -14,7 +14,7 @@ from textual import work
 
 import scrollmouse
 
-INI_PATH = './scrollmode.ini'
+INI_PATH = scrollmouse.get_ini_path()
 
 class RecordModal(ModalScreen[tuple[int | None, Exception | None]]):
     """Modal to record button press."""
@@ -255,6 +255,9 @@ class DeviceSelectorApp(App):
             'ScrollToggleCode': str(self.trigger_code),
             'Sensitivity': sensitivity_str
         }
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(INI_PATH), exist_ok=True)
         
         with open(INI_PATH, 'w') as configfile:
             config.write(configfile)

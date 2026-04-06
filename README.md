@@ -68,14 +68,14 @@ If you prefer to run the raw Python scripts instead, you will need to set up the
    sudo python scrollmode.py
    ```
 
-3. **Configuration UI**: Because no `scrollmode.ini` file exists yet, a Terminal UI will appear.
+3. **Configuration UI**: Because no configuration file exists yet, a Terminal UI will appear.
    - Use the arrow keys to select your mouse from the list of available input devices.
    - Focus "Record Trigger" and press it, then click the mouse button you want to use as your scroll toggle lock.
    - Select "Save & Exit" to save your choices locally.
 
 ## Usage
 
-Once `scrollmode.ini` is generated, you can launch the application normally:
+Once the configuration is generated (stored at `~/.config/scrollmode/scrollmode.ini`), you can launch the application normally:
 
 ```bash
 sudo python scrollmode.py
@@ -93,10 +93,11 @@ sudo python scrollmode.py -d
 
 ### Re-configuring
 
-To launch the setup wizard again to change your device or trigger key, simply delete the generated configuration file and run the script again:
+To launch the setup wizard again to change your device or trigger key, simply delete the generated configuration file (usually found at `~/.config/scrollmode/scrollmode.ini`) and run the script again:
 
 ```bash
-rm scrollmode.ini
+# Delete the config file to trigger the setup wizard
+rm ~/.config/scrollmode/scrollmode.ini
 sudo python scrollmode.py
 ```
 

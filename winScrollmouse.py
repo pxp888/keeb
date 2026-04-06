@@ -5,346 +5,351 @@ import os
 import sys
 import queue
 import threading
+import tkinter as tk
+from tkinter import ttk, messagebox
 
+# --- Win32 Constants & Types ---
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
-# --- Win32 Constants & Types ---
 IS_64BIT = ctypes.sizeof(ctypes.c_void_p) == 8
 LRESULT = ctypes.c_longlong if IS_64BIT else ctypes.c_long
 WPARAM  = ctypes.c_ulonglong if IS_64BIT else wintypes.WPARAM
 LPARAM  = ctypes.c_longlong if IS_64BIT else wintypes.LPARAM
 
-# SendInput Constants
 INPUT_MOUSE = 0
 MOUSEEVENTF_WHEEL = 0x0800
 MOUSEEVENTF_HWHEEL = 0x1000
-
-# Raw Input Constants
-RIDEV_INPUTSINK = 0x00000100
-RID_INPUT = 0x10000003
+WH_MOUSE_LL = 14
+WM_MOUSEMOVE = 0x0200
+WM_XBUTTONDOWN = 0x020B
+WM_XBUTTONUP = 0x020C
 WM_INPUT = 0x00FF
+RID_INPUT = 0x10000003
+RIDEV_INPUTSINK = 0x00000100
+WM_QUIT = 0x0012
+
+# Standard Mouse Messages
+WM_LBUTTONDOWN = 0x0201
+WM_RBUTTONDOWN = 0x0204
+WM_MBUTTONDOWN = 0x0207
 
 class RAWINPUTHEADER(ctypes.Structure):
-    _fields_ = [
-        ("dwType", wintypes.DWORD),
-        ("dwSize", wintypes.DWORD),
-        ("hDevice", wintypes.HANDLE),
-        ("wParam", wintypes.WPARAM),
-    ]
+    _fields_ = [("dwType", wintypes.DWORD), ("dwSize", wintypes.DWORD),
+                ("hDevice", wintypes.HANDLE), ("wParam", wintypes.WPARAM)]
 
 class RAWMOUSE(ctypes.Structure):
     class _U1(ctypes.Union):
         class _S2(ctypes.Structure):
-            _fields_ = [
-                ("usButtonFlags", wintypes.USHORT),
-                ("usButtonData", wintypes.USHORT),
-            ]
-        _fields_ = [
-            ("ulButtons", wintypes.ULONG),
-            ("s", _S2),
-        ]
-    _fields_ = [
-        ("usFlags", wintypes.USHORT),
-        ("u1", _U1),
-        ("ulRawButtons", wintypes.ULONG),
-        ("lLastX", wintypes.LONG),
-        ("lLastY", wintypes.LONG),
-        ("ulExtraInformation", wintypes.ULONG),
-    ]
+            _fields_ = [("usButtonFlags", wintypes.USHORT), ("usButtonData", wintypes.USHORT)]
+        _fields_ = [("ulButtons", wintypes.ULONG), ("s", _S2)]
+    _fields_ = [("usFlags", wintypes.USHORT), ("u1", _U1), ("ulRawButtons", wintypes.ULONG),
+                ("lLastX", wintypes.LONG), ("lLastY", wintypes.LONG), ("ulExtraInformation", wintypes.ULONG)]
 
 class RAWINPUT(ctypes.Structure):
-    _fields_ = [
-        ("header", RAWINPUTHEADER),
-        ("mouse", RAWMOUSE),
-    ]
+    _fields_ = [("header", RAWINPUTHEADER), ("mouse", RAWMOUSE)]
 
 class RAWINPUTDEVICE(ctypes.Structure):
-    _fields_ = [
-        ("usUsagePage", wintypes.USHORT),
-        ("usUsage", wintypes.USHORT),
-        ("dwFlags", wintypes.DWORD),
-        ("hwndTarget", wintypes.HWND),
-    ]
+    _fields_ = [("usUsagePage", wintypes.USHORT), ("usUsage", wintypes.USHORT),
+                ("dwFlags", wintypes.DWORD), ("hwndTarget", wintypes.HWND)]
 
-# Standard structures for hooks and input
 class MOUSEINPUT(ctypes.Structure):
-    _fields_ = [
-        ("dx", wintypes.LONG),
-        ("dy", wintypes.LONG),
-        ("mouseData", wintypes.DWORD),
-        ("dwFlags", wintypes.DWORD),
-        ("time", wintypes.DWORD),
-        ("dwExtraInfo", ctypes.c_void_p),
-    ]
+    _fields_ = [("dx", wintypes.LONG), ("dy", wintypes.LONG), ("mouseData", wintypes.DWORD),
+                ("dwFlags", wintypes.DWORD), ("time", wintypes.DWORD), ("dwExtraInfo", ctypes.c_void_p)]
 
 class _INPUTunion(ctypes.Union):
     _fields_ = [("mi", MOUSEINPUT)]
 
 class INPUT(ctypes.Structure):
-    _fields_ = [
-        ("type", wintypes.DWORD),
-        ("union", _INPUTunion),
-    ]
+    _fields_ = [("type", wintypes.DWORD), ("union", _INPUTunion)]
 
 class MSLLHOOKSTRUCT(ctypes.Structure):
-    _fields_ = [
-        ("pt", wintypes.POINT),
-        ("mouseData", wintypes.DWORD),
-        ("flags", wintypes.DWORD),
-        ("time", wintypes.DWORD),
-        ("dwExtraInfo", ctypes.c_void_p),
-    ]
+    _fields_ = [("pt", wintypes.POINT), ("mouseData", wintypes.DWORD), ("flags", wintypes.DWORD),
+                ("time", wintypes.DWORD), ("dwExtraInfo", ctypes.c_void_p)]
 
-# Function Definitions
+# Function Signatures
 user32.SendInput.argtypes = [wintypes.UINT, ctypes.POINTER(INPUT), ctypes.c_int]
-user32.SendInput.restype = wintypes.UINT
-
 user32.CallNextHookEx.argtypes = [ctypes.c_void_p, ctypes.c_int, WPARAM, LPARAM]
-user32.CallNextHookEx.restype = LRESULT
-
-user32.DefWindowProcW.argtypes = [wintypes.HWND, wintypes.UINT, WPARAM, LPARAM]
-user32.DefWindowProcW.restype = LRESULT
-
 user32.GetRawInputData.argtypes = [wintypes.HANDLE, wintypes.UINT, ctypes.c_void_p, ctypes.POINTER(wintypes.UINT), wintypes.UINT]
-user32.GetRawInputData.restype = wintypes.UINT
-
 user32.CreateWindowExW.argtypes = [wintypes.DWORD, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.HWND, wintypes.HMENU, wintypes.HINSTANCE, wintypes.LPVOID]
-user32.CreateWindowExW.restype = wintypes.HWND
+user32.DefWindowProcW.argtypes = [wintypes.HWND, wintypes.UINT, WPARAM, LPARAM]
+user32.SetWindowsHookExW.argtypes = [wintypes.INT, ctypes.c_void_p, wintypes.HINSTANCE, wintypes.DWORD]
+user32.SetWindowsHookExW.restype = wintypes.HANDLE
 
 LowLevelMouseProc = ctypes.WINFUNCTYPE(LRESULT, ctypes.c_int, WPARAM, LPARAM)
 WNDPROC = ctypes.WINFUNCTYPE(LRESULT, wintypes.HWND, wintypes.UINT, WPARAM, LPARAM)
-PHANDLER_ROUTINE = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
 
-# --- Define API calls with proper types ---
-kernel32.SetConsoleCtrlHandler.argtypes = [PHANDLER_ROUTINE, wintypes.BOOL]
-kernel32.SetConsoleCtrlHandler.restype = wintypes.BOOL
+class ScrollController:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("ScrollMode Control Panel")
+        root.geometry("400x480")
+        root.configure(bg="#1E1E2E")
+        root.resizable(False, False)
 
-# --- Global State ---
-WH_MOUSE_LL = 14
-WM_MOUSEMOVE = 0x0200
-INI_PATH = './winScrollmode.ini'
-hook_id = None
-scroll_mode = False
-scroll_queue = queue.Queue()
+        # State
+        self.is_active = False
+        self.scroll_mode = False
+        self.hook_thread = None
+        self.hook_thread_id = None
+        self.scroll_queue = queue.Queue()
+        self.ini_path = './winScrollmode.ini'
+        
+        # Internal configuration
+        self.toggle_msg = 0x020B
+        self.toggle_data = 1
+        self.v_scale_val = 40
+        self.h_scale_val = 20
+        
+        # TKinter vars
+        self.v_scale_str = tk.StringVar(value="40")
+        self.h_scale_str = tk.StringVar(value="20")
+        self.recording_mode = False
 
-# Config defaults
-TOGGLE_MESSAGE = 0x020B 
-TOGGLE_MOUSEDATA = 1    
-TOGGLE_UP_MESSAGE = 0x020C
-V_SCALE = 40
-H_SCALE = 20
-handler_delegate = None
-cb = None
-wnd_proc_delegate = None
+        # Persistent delegates to prevent GC
+        self.hook_proc_delegate = LowLevelMouseProc(self.hook_callback)
+        self.wnd_proc_delegate = WNDPROC(self.wnd_proc)
 
-def scroll_worker():
-    v_acc = 0
-    h_acc = 0
-    while True:
+        self.load_config()
+        self.setup_ui()
+        
+        # Start injection thread
+        threading.Thread(target=self.scroll_worker, daemon=True).start()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def load_config(self):
+        if not os.path.exists(self.ini_path): return
+        config = configparser.ConfigParser()
+        config.read(self.ini_path)
         try:
-            task = scroll_queue.get()
+            if 'config' in config:
+                self.toggle_msg = int(config['config'].get('ButtonMessage', 0x020B))
+                self.toggle_data = int(config['config'].get('MouseData', 1))
+                self.v_scale_val = int(config['config'].get('VScale', 40))
+                self.h_scale_val = int(config['config'].get('HScale', 20))
+                self.v_scale_str.set(str(self.v_scale_val))
+                self.h_scale_str.set(str(self.h_scale_val))
+                print(f"[Core] Config Loaded: Msg={hex(self.toggle_msg)}, Data={self.toggle_data}")
+        except Exception as e:
+            print(f"[Core] Error loading config: {e}")
+
+    def save_config(self):
+        try:
+            self.v_scale_val = int(self.v_scale_str.get())
+            self.h_scale_val = int(self.h_scale_str.get())
+        except ValueError:
+            messagebox.showwarning("Warning", "Invalid scale value. Please use integers.")
+            return
+
+        config = configparser.ConfigParser()
+        config['config'] = {
+            'ButtonMessage': str(self.toggle_msg),
+            'MouseData': str(self.toggle_data),
+            'VScale': str(self.v_scale_val),
+            'HScale': str(self.h_scale_val)
+        }
+        with open(self.ini_path, 'w') as f:
+            config.write(f)
+        print("[Core] Settings Applied and Saved.")
+
+    def setup_ui(self):
+        style = ttk.Style()
+        style.theme_use('clam')
+        colors = {"bg": "#1E1E2E", "card": "#24283B", "accent": "#7AA2F7", "text": "#C0CAF5", "success": "#9ECE6A", "error": "#F7768E", "input_bg": "#16161E"}
+        
+        style.configure("Main.TFrame", background=colors["bg"])
+        style.configure("Card.TFrame", background=colors["card"])
+        style.configure("Title.TLabel", background=colors["bg"], foreground=colors["accent"], font=("Segoe UI", 16, "bold"))
+        style.configure("Status.TLabel", background=colors["card"], foreground=colors["text"], font=("Segoe UI", 10))
+        style.configure("Info.TLabel", background=colors["bg"], foreground=colors["text"], font=("Segoe UI", 9))
+
+        main_frame = ttk.Frame(self.root, style="Main.TFrame", padding=20)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(main_frame, text="SCROLL MODE", style="Title.TLabel").pack(pady=(0, 20))
+
+        self.status_var = tk.StringVar(value="Status: Inactive")
+        self.toggle_btn = tk.Button(
+            main_frame, text="START ENGINE", command=self.toggle_engine,
+            bg=colors["accent"], fg="#ffffff", font=("Segoe UI", 12, "bold"),
+            relief=tk.FLAT, activebackground=colors["success"], cursor="hand2"
+        )
+        self.toggle_btn.pack(fill=tk.X, pady=(0, 20))
+
+        card = ttk.Frame(main_frame, style="Card.TFrame", padding=15)
+        card.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(card, text="Toggle Activation Button:", style="Status.TLabel").pack(anchor=tk.W)
+        self.btn_name_var = tk.StringVar(value=self.get_button_name())
+        self.record_btn = tk.Button(
+            card, textvariable=self.btn_name_var, command=self.start_recording,
+            bg=colors["input_bg"], fg=colors["text"], relief=tk.FLAT, pady=5, cursor="hand2"
+        )
+        self.record_btn.pack(fill=tk.X, pady=(5, 15))
+
+        ttk.Label(card, text="Vertical Sensitivity:", style="Status.TLabel").pack(anchor=tk.W)
+        tk.Entry(card, textvariable=self.v_scale_str, bg=colors["input_bg"], fg=colors["text"], insertbackground="white", relief=tk.FLAT, font=("Consolas", 11)).pack(fill=tk.X, pady=(5, 15))
+
+        ttk.Label(card, text="Horizontal Sensitivity:", style="Status.TLabel").pack(anchor=tk.W)
+        tk.Entry(card, textvariable=self.h_scale_str, bg=colors["input_bg"], fg=colors["text"], insertbackground="white", relief=tk.FLAT, font=("Consolas", 11)).pack(fill=tk.X, pady=(5, 15))
+
+        ttk.Button(card, text="Apply & Save Settings", command=self.save_config).pack(fill=tk.X, pady=(10, 0))
+
+    def get_button_name(self):
+        if self.toggle_msg == WM_RBUTTONDOWN: return "Right Click"
+        if self.toggle_msg == WM_MBUTTONDOWN: return "Middle Click"
+        if self.toggle_msg == WM_XBUTTONDOWN: return f"Mouse {'4' if self.toggle_data == 1 else '5'}"
+        return f"Btn {hex(self.toggle_msg)}"
+
+    def start_recording(self):
+        if self.recording_mode: return
+        print("[Core] Recording starting... Press desired mouse button.")
+        self.recording_mode = True
+        self.btn_name_var.set("PRESS ANY MOUSE BUTTON...")
+        self.record_btn.config(bg="#F7768E")
+        if not self.is_active: self.start_hook_thread()
+
+    def toggle_engine(self):
+        if self.is_active:
+            self.stop_hook_thread()
+            self.toggle_btn.config(text="START ENGINE", bg="#7AA2F7")
+        else:
+            self.start_hook_thread()
+            self.toggle_btn.config(text="STOP ENGINE", bg="#F7768E")
+
+    def start_hook_thread(self):
+        if self.hook_thread and self.hook_thread.is_alive(): return
+        self.is_active = True
+        self.hook_thread = threading.Thread(target=self._run_hook_loop, daemon=True)
+        self.hook_thread.start()
+
+    def stop_hook_thread(self):
+        self.is_active = False
+        if self.hook_thread_id:
+            user32.PostThreadMessageW(self.hook_thread_id, WM_QUIT, 0, 0)
+        self.hook_thread = None
+
+    def _run_hook_loop(self):
+        self.hook_thread_id = kernel32.GetCurrentThreadId()
+        
+        # Set Hook (Try None first as it worked in the crash version)
+        h_hook = user32.SetWindowsHookExW(WH_MOUSE_LL, self.hook_proc_delegate, None, 0)
+        if not h_hook:
+            err = ctypes.get_last_error()
+            print(f"[HookThread] Failed to set hook! Error Code: {err} ({ctypes.WinError(err)})")
+            # If NULL fails, try with module handle
+            h_hook = user32.SetWindowsHookExW(WH_MOUSE_LL, self.hook_proc_delegate, kernel32.GetModuleHandleW(None), 0)
+            if not h_hook:
+                err2 = ctypes.get_last_error()
+                print(f"[HookThread] Retry with ModuleHandle failed too! Code: {err2}")
+                return
+        
+        print(f"[HookThread] Hook set successfully (ID: {hex(h_hook)})")
+
+        # Register window for Raw Input
+        class_name = f"ScrollHook_{self.hook_thread_id}"
+        wc = type("WNDCLASSEX", (ctypes.Structure,), {"_fields_": [("cbSize", wintypes.UINT), ("style", wintypes.UINT), ("lpfnWndProc", WNDPROC), ("cbClsExtra", ctypes.c_int), ("cbWndExtra", ctypes.c_int), ("hInstance", wintypes.HINSTANCE), ("hIcon", wintypes.HANDLE), ("hCursor", wintypes.HANDLE), ("hbrBackground", wintypes.HANDLE), ("lpszMenuName", wintypes.LPCWSTR), ("lpszClassName", wintypes.LPCWSTR), ("hIconSm", wintypes.HANDLE)]})()
+        wc.cbSize, wc.lpfnWndProc, wc.hInstance, wc.lpszClassName = ctypes.sizeof(wc), self.wnd_proc_delegate, kernel32.GetModuleHandleW(None), class_name
+        user32.RegisterClassExW(ctypes.byref(wc))
+        hwnd = user32.CreateWindowExW(0, class_name, "Hidden", 0, 0, 0, 0, 0, 0, 0, wc.hInstance, None)
+        
+        rid = RAWINPUTDEVICE(0x01, 0x02, RIDEV_INPUTSINK, hwnd)
+        user32.RegisterRawInputDevices(ctypes.byref(rid), 1, ctypes.sizeof(rid))
+
+        msg = wintypes.MSG()
+        while user32.GetMessageW(ctypes.byref(msg), 0, 0, 0) > 0:
+            user32.TranslateMessage(ctypes.byref(msg))
+            user32.DispatchMessageW(ctypes.byref(msg))
+
+        user32.UnhookWindowsHookEx(h_hook)
+        user32.DestroyWindow(hwnd)
+        print("[HookThread] Hook unhooked and thread exiting.")
+
+    def hook_callback(self, nCode, wParam, lParam):
+        if nCode == 0: # HC_ACTION
+            event = ctypes.cast(lParam, ctypes.POINTER(MSLLHOOKSTRUCT)).contents
+            if event.flags & 1: 
+                return user32.CallNextHookEx(None, nCode, wParam, lParam)
+
+            mouse_data = event.mouseData >> 16
+            
+            if self.recording_mode:
+                if wParam in (WM_RBUTTONDOWN, WM_MBUTTONDOWN, WM_XBUTTONDOWN):
+                    print(f"[Hook] Recorded: Msg={hex(wParam)}, Data={mouse_data}")
+                    self.toggle_msg, self.toggle_data = wParam, mouse_data
+                    self.recording_mode = False
+                    self.root.after(0, self.update_ui_post_record)
+                    return 1
+
+            if self.is_active:
+                if wParam == self.toggle_msg and (self.toggle_data == 0 or mouse_data == self.toggle_data):
+                    self.scroll_mode = not self.scroll_mode
+                    if self.scroll_mode: self.scroll_queue.put("RESET")
+                    return 1
+                
+                # Check for release
+                is_release = False
+                if wParam == (self.toggle_msg + 1): is_release = True
+                elif wParam == WM_XBUTTONUP and self.toggle_msg == WM_XBUTTONDOWN and mouse_data == self.toggle_data: is_release = True
+                
+                if is_release: return 1
+
+                if self.scroll_mode and wParam == WM_MOUSEMOVE:
+                    return 1
+
+        return user32.CallNextHookEx(None, nCode, wParam, lParam)
+
+    def wnd_proc(self, hwnd, msg, wParam, lParam):
+        if msg == WM_INPUT:
+            size = wintypes.UINT()
+            user32.GetRawInputData(ctypes.cast(lParam, wintypes.HANDLE), RID_INPUT, None, ctypes.byref(size), ctypes.sizeof(RAWINPUTHEADER))
+            if size.value > 0:
+                raw_buffer = (ctypes.c_byte * size.value)()
+                user32.GetRawInputData(ctypes.cast(lParam, wintypes.HANDLE), RID_INPUT, ctypes.byref(raw_buffer), ctypes.byref(size), ctypes.sizeof(RAWINPUTHEADER))
+                raw = RAWINPUT.from_buffer(raw_buffer)
+                if self.scroll_mode and raw.header.dwType == 0: 
+                    dx, dy = raw.mouse.lLastX, raw.mouse.lLastY
+                    if dx != 0 or dy != 0: self.scroll_queue.put((dx, dy))
+        return user32.DefWindowProcW(hwnd, msg, wParam, lParam)
+
+    def update_ui_post_record(self):
+        self.btn_name_var.set(self.get_button_name())
+        self.record_btn.config(bg="#16161E")
+        self.save_config()
+
+    def scroll_worker(self):
+        v_acc, h_acc = 0, 0
+        while True:
+            task = self.scroll_queue.get()
             if task is None: break
             if task == "RESET":
-                v_acc = 0
-                h_acc = 0
-                scroll_queue.task_done()
+                v_acc, h_acc = 0, 0
                 continue
-                
             dx, dy = task
-            # Accumulate the movement scaled by our sensitivity
-            v_acc += -dy * V_SCALE
-            h_acc += dx * H_SCALE
+            v_acc += -dy * self.v_scale_val
+            h_acc += dx * self.h_scale_val
             
-            # Flush vertical pulses (120 units is one standard notch)
             while abs(v_acc) >= 120:
                 pulse = 120 if v_acc > 0 else -120
-                mouse_data = ctypes.c_ulong(pulse).value
-                mi = MOUSEINPUT(0, 0, mouse_data, MOUSEEVENTF_WHEEL, 0, None)
+                mi = MOUSEINPUT(0, 0, ctypes.c_ulong(pulse).value, MOUSEEVENTF_WHEEL, 0, None)
                 inp = INPUT(INPUT_MOUSE, _INPUTunion(mi=mi))
                 user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
                 v_acc -= pulse
-                
-            # Flush horizontal pulses
             while abs(h_acc) >= 120:
                 pulse = 120 if h_acc > 0 else -120
-                mouse_data_h = ctypes.c_ulong(pulse).value
-                mi = MOUSEINPUT(0, 0, mouse_data_h, MOUSEEVENTF_HWHEEL, 0, None)
+                mi = MOUSEINPUT(0, 0, ctypes.c_ulong(pulse).value, MOUSEEVENTF_HWHEEL, 0, None)
                 inp = INPUT(INPUT_MOUSE, _INPUTunion(mi=mi))
                 user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
                 h_acc -= pulse
-                
-            scroll_queue.task_done()
-        except Exception as e:
-            print(f"Worker Loop Error: {e}")
 
-def load_config():
-    global TOGGLE_MESSAGE, TOGGLE_MOUSEDATA, TOGGLE_UP_MESSAGE
-    if not os.path.exists(INI_PATH):
-        print(f"Config '{INI_PATH}' not found.")
-        sys.exit(1)
-        
-    config = configparser.ConfigParser()
-    config.read(INI_PATH)
-    try:
-        TOGGLE_MESSAGE = int(config['config']['ButtonMessage'])
-        TOGGLE_MOUSEDATA = int(config['config']['MouseData'])
-        TOGGLE_UP_MESSAGE = TOGGLE_MESSAGE + 1
-        
-        global V_SCALE, H_SCALE
-        V_SCALE = int(config['config'].get('VScale', 120))
-        H_SCALE = int(config['config'].get('HScale', 120))
-        
-        print(f"Loaded config: MSG={hex(TOGGLE_MESSAGE)}, DATA={TOGGLE_MOUSEDATA}, VScale={V_SCALE}, HScale={H_SCALE}")
-    except KeyError:
-        print("Invalid config file.")
-        sys.exit(1)
-
-def hook_callback(nCode, wParam, lParam):
-    global scroll_mode
-    if nCode < 0:
-        return user32.CallNextHookEx(hook_id, nCode, wParam, lParam)
-
-    event = ctypes.cast(lParam, ctypes.POINTER(MSLLHOOKSTRUCT)).contents
-    if event.flags & 1: 
-        return user32.CallNextHookEx(hook_id, nCode, wParam, lParam)
-
-    mouseData = event.mouseData >> 16
-    if wParam == TOGGLE_MESSAGE and (TOGGLE_MOUSEDATA == 0 or mouseData == TOGGLE_MOUSEDATA):
-        scroll_mode = not scroll_mode
-        if scroll_mode:
-            scroll_queue.put("RESET")
-            print("Scroll mode ON (Raw Input)")
-        else:
-            print("Scroll mode OFF")
-        return 1
-
-    if wParam == TOGGLE_UP_MESSAGE and (TOGGLE_MOUSEDATA == 0 or mouseData == TOGGLE_MOUSEDATA):
-        return 1
-
-    if scroll_mode and wParam == WM_MOUSEMOVE:
-        # Suppress standard cursor movement
-        return 1
-        
-    return user32.CallNextHookEx(hook_id, nCode, wParam, lParam)
-
-def wnd_proc(hwnd, msg, wParam, lParam):
-    if msg == WM_INPUT:
-        size = wintypes.UINT()
-        # Get required size
-        user32.GetRawInputData(ctypes.cast(lParam, wintypes.HANDLE), RID_INPUT, None, ctypes.byref(size), ctypes.sizeof(RAWINPUTHEADER))
-        
-        if size.value > 0:
-            raw_buffer = (ctypes.c_byte * size.value)()
-            user32.GetRawInputData(ctypes.cast(lParam, wintypes.HANDLE), RID_INPUT, ctypes.byref(raw_buffer), ctypes.byref(size), ctypes.sizeof(RAWINPUTHEADER))
-            
-            raw = RAWINPUT.from_buffer(raw_buffer)
-            if scroll_mode and raw.header.dwType == 0: # RIM_TYPEMOUSE
-                dx = raw.mouse.lLastX
-                dy = raw.mouse.lLastY
-                if dx != 0 or dy != 0:
-                    scroll_queue.put((dx, dy))
-                    
-    return user32.DefWindowProcW(hwnd, msg, wParam, lParam)
-
-def ctrl_handler(ctrl_type):
-    """
-    Handles console control events (Ctrl+C, closing the window, logging off, etc.)
-    Ensures that we post a quit message so GetMessage can exit and the hook can be removed.
-    """
-    if ctrl_type in (0, 2): # CTRL_C_EVENT or CTRL_CLOSE_EVENT
-        print("\nShutdown signal received. Cleaning up...")
-        user32.PostQuitMessage(0)
-        return True # Handled
-    return False
-
-def main():
-    global hook_id
-    load_config()
-    
-    # Start the scroll event injection thread
-    t = threading.Thread(target=scroll_worker, daemon=True)
-    t.start()
-    
-    # Register a hidden window to receive WM_INPUT
-    hinst = kernel32.GetModuleHandleW(None)
-    
-    WNDCLASSEX = type("WNDCLASSEX", (ctypes.Structure,), {
-        "_fields_": [
-            ("cbSize", wintypes.UINT),
-            ("style", wintypes.UINT),
-            ("lpfnWndProc", WNDPROC),
-            ("cbClsExtra", ctypes.c_int),
-            ("cbWndExtra", ctypes.c_int),
-            ("hInstance", wintypes.HINSTANCE),
-            ("hIcon", wintypes.HANDLE),
-            ("hCursor", wintypes.HANDLE),
-            ("hbrBackground", wintypes.HANDLE),
-            ("lpszMenuName", wintypes.LPCWSTR),
-            ("lpszClassName", wintypes.LPCWSTR),
-            ("hIconSm", wintypes.HANDLE),
-        ]
-    })
-    
-    global wnd_proc_delegate
-    wnd_proc_delegate = WNDPROC(wnd_proc) # Keep reference alive
-    
-    wc = WNDCLASSEX()
-    wc.cbSize = ctypes.sizeof(WNDCLASSEX)
-    wc.lpfnWndProc = wnd_proc_delegate
-    wc.hInstance = hinst
-    wc.lpszClassName = "RawInputReceiver"
-    
-    user32.RegisterClassExW(ctypes.byref(wc))
-    
-    hwnd = user32.CreateWindowExW(
-        0, wc.lpszClassName, "RawInputMsgWindow", 0,
-        0, 0, 0, 0,
-        0, 0, hinst, None
-    )
-    
-    if not hwnd:
-        print("Failed to create hidden window for Raw Input")
-        return
-
-    # Register for Raw Input (Mouse)
-    rid = RAWINPUTDEVICE()
-    rid.usUsagePage = 0x01
-    rid.usUsage = 0x02
-    rid.dwFlags = RIDEV_INPUTSINK # Receive even when focus is lost
-    rid.hwndTarget = hwnd
-    if not user32.RegisterRawInputDevices(ctypes.byref(rid), 1, ctypes.sizeof(rid)):
-        print("Failed to register Raw Input devices")
-        return
-    
-    # Register console control handler to catch window 'X' close
-    global handler_delegate
-    handler_delegate = PHANDLER_ROUTINE(ctrl_handler)
-    if not kernel32.SetConsoleCtrlHandler(handler_delegate, True):
-        print("Failed to set console control handler")
-        return
-
-    # Set the global hook for cursor suppression
-    global cb
-    cb = LowLevelMouseProc(hook_callback)
-    hook_id = user32.SetWindowsHookExW(WH_MOUSE_LL, cb, None, 0)
-    
-    if not hook_id:
-        print("Failed to set suppression hook")
-        return
-
-    print("Scrollmode active using Raw Input. (Ctrl+C to stop)")
-    msg = wintypes.MSG()
-    try:
-        while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
-            user32.TranslateMessage(ctypes.byref(msg))
-            user32.DispatchMessageW(ctypes.byref(msg))
-    except KeyboardInterrupt:
-        pass
-    finally:
-        if hook_id:
-            user32.UnhookWindowsHookEx(hook_id)
-            print("Successfully unhooked mouse. Exit clean.")
+    def on_close(self):
+        self.stop_hook_thread()
+        self.save_config()
+        self.root.destroy()
 
 if __name__ == "__main__":
-    main()
+    try: ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except: user32.SetProcessDPIAware()
+    root = tk.Tk()
+    app = ScrollController(root)
+    root.mainloop()

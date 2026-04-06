@@ -8,6 +8,9 @@ The program creates a virtual input device via Linux's `uinput` subsystem and `e
 
 ![screen1](screen1.png)
 
+windows version:
+![windows screenshot](windows.png)
+
 ## Features
 
 - **Custom Scroll Trigger**: Assign any mouse button to activate scroll mode.

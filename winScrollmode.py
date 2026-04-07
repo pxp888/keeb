@@ -341,8 +341,12 @@ class ScrollController:
                 
                 # Check for release
                 is_release = False
-                if wParam == (self.toggle_msg + 1): is_release = True
-                elif wParam == WM_XBUTTONUP and self.toggle_msg == WM_XBUTTONDOWN and mouse_data == self.toggle_data: is_release = True
+                if wParam == (self.toggle_msg + 1):
+                    if self.toggle_msg == WM_XBUTTONDOWN:
+                        if self.toggle_data == 0 or mouse_data == self.toggle_data:
+                            is_release = True
+                    else:
+                        is_release = True
                 
                 if is_release: return 1
 
